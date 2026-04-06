@@ -76,7 +76,7 @@
                 Edit3: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>,
                 ChevronLeft: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m15 18-6-6 6-6"/></svg>,
                 X: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>,
-                Sparkles: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>,
+                Sparkles: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1-1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>,
                 MessageSquare: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             };
             return icons[name] || null;
@@ -88,142 +88,26 @@
             const [academyLoggedIn, setAcademyLoggedIn] = useState(false);
             const [userInfo, setUserInfo] = useState({ name: '', email: '', id: '', isAdmin: false });
             const [activeMenu, setActiveMenu] = useState('cloze');
+            const [showPasswordChange, setShowPasswordChange] = useState(false);
 
-            const [submissions, setSubmissions] = useState([
-                { id: 'SUB-001', studentId: 'STU-075', studentName: '김유신', title: '성공하지 못하는 사람 4유형 빈칸', type: 'Scaffold Cloze', score: 85, submittedAt: new Date(Date.now() - 3600000), status: 'pending' },
-                { id: 'SUB-002', studentId: 'STU-088', studentName: '이순신', title: '[모의고사 1] 기후 변화와 일사량', type: 'Scaffold Cloze', score: 92, submittedAt: new Date(Date.now() - 10800000), status: 'pending' }
-            ]);
+            // 로컬 스토리지를 이용한 데이터 누적 관리 (초기화는 빈 배열)
+            const [submissions, setSubmissions] = useState(() => JSON.parse(localStorage.getItem('hsktc_submissions')) || []);
+            const [tasks, setTasks] = useState(() => JSON.parse(localStorage.getItem('hsktc_tasks')) || []);
 
-            const [tasks, setTasks] = useState([
-                { id: 1, level: '6급', category: '읽기 훈련', title: '성공하지 못하는 사람의 4가지 유형', type: 'Scaffold Cloze', status: '활성', date: '2026-04-05', isLegacy: true },
-                { 
-                    id: 5, level: '6급', category: '읽기 훈련', title: '[모의고사 1] 기후 변화와 일사량', type: 'Scaffold Cloze', status: '활성', date: '2026-04-06', isLegacy: false,
-                    taskData: {
-                        dictionaryList: [
-                            { word: "碳排放", pinyin: "tàn pái fàng", mean: "탄소 배출" },
-                            { word: "应对手段", pinyin: "yìng duì shǒu duàn", mean: "대응 수단" },
-                            { word: "减少抵达地球的太阳能辐射量是阻止全球气候变化最为有效的方法", pinyin: "jiǎn shǎo dǐ dá dì qiú de tài yáng néng fú shè liàng shì zǔ zhǐ quán qiú qì hòu biàn huà zuì wéi yǒu xiào de fāng fǎ", mean: "지구에 도달하는 태양 에너지 방사량을 줄이는 것이 전 지구적 기후 변화를 막는 가장 효과적인 방법이다" },
-                            { word: "发生逆转", pinyin: "fā shēng nì zhuǎn", mean: "역전되다" },
-                            { word: "辐射量", pinyin: "fú shè liàng", mean: "방사량" },
-                            { word: "骤降", pinyin: "zhòu jiàng", mean: "급강하하다" },
-                            { word: "气溶胶", pinyin: "qì róng jiāo", mean: "에어로졸" },
-                            { word: "强制性地", pinyin: "qiáng zhì xìng de", mean: "강제적으로" },
-                            { word: "温度下降的速度超过了地球上动植物所能适应的程度", pinyin: "wēn dù xià jiàng de sù dù chāo guò le dì qiú shàng dòng zhí wù suǒ néng shì yìng de chéng dù", mean: "온도 하강 속도가 지구상의 동식물이 적응할 수 있는 정도를 초과하다" }
-                        ],
-                        correctAnswers: {
-                            1: { 1: "碳排放", 2: "应对手段", 3: "减少抵达地球的太阳能辐射量是阻止全球气候变化最为有效的方法", 4: "发生逆转", 5: "辐射量", 6: "骤降", 7: "气溶胶", 8: "强制性地", 9: "温度下降的速度超过了地球上动植物所能适应的程度" },
-                            2: { 1: "碳排放", 2: "辐射量", 3: "骤降", 4: "气溶胶" },
-                            3: { 1: "应对手段", 2: "发生逆转", 3: "强制性地" },
-                            4: { 1: "减少抵达地球的太阳能辐射量是阻止全球气候变化最为有效的方法", 2: "温度下降的速度超过了地球上动植物所能适应的程度" }
-                        },
-                        tokens: [
-                            { type: "text", value: "面对全球变暖现象，人们为了减少" },
-                            { type: "blank", value: "碳排放", pinyin: "tàn pái fàng", meaning: "탄소 배출", step: 2, stepMap: { 1: 1, 2: 1 } },
-                            { type: "text", value: "，提出了节约能源消耗、减少化石能源的使用以及加大可再生能源利用等" },
-                            { type: "blank", value: "应对手段", pinyin: "yìng duì shǒu duàn", meaning: "대응 수단", step: 3, stepMap: { 1: 2, 3: 1 } },
-                            { type: "text", value: "。然而，一些气候科学家认为，" },
-                            { type: "blank", value: "减少抵达地球的太阳能辐射量是阻止全球气候变化最为有效的方法", pinyin: "jiǎn shǎo dǐ dá dì qiú de tài yáng néng fú shè liàng shì zǔ zhǐ quán qiú qì hòu biàn huà zuì wéi yǒu xiào de fāng fǎ", meaning: "지구에 도달하는 태양 에너지 방사량을 줄이는 것이 전 지구적 기후 변화를 막는 가장 효과적인 방법이다", step: 4, stepMap: { 1: 3, 4: 1 } },
-                            { type: "text", value: "。为了阻止海平面上升或让上升趋势" },
-                            { type: "blank", value: "发生逆转", pinyin: "fā shēng nì zhuǎn", meaning: "역전되다", step: 3, stepMap: { 1: 4, 3: 2 } },
-                            { type: "text", value: "，人们需要迅速减少太阳能对地球的" },
-                            { type: "blank", value: "辐射量", pinyin: "fú shè liàng", meaning: "방사량", step: 2, stepMap: { 1: 5, 2: 2 } },
-                            { type: "text", value: "。然而辐射量快速减少将导致地球大气温度" },
-                            { type: "blank", value: "骤降", pinyin: "zhòu jiàng", meaning: "급강하하다", step: 2, stepMap: { 1: 6, 2: 3 } },
-                            { type: "text", value: "，应采取渐变法。目前，控制太阳能辐射的方法包括用卫星遮挡太阳、让地球表面反射更多的太阳光或者在上层大气中放置" },
-                            { type: "blank", value: "气溶胶", pinyin: "qì róng jiāo", meaning: "에어로졸", step: 2, stepMap: { 1: 7, 2: 4 } },
-                            { type: "text", value: "粒子模拟火山爆发效应等。有科学家指出：" },
-                            { type: "blank", value: "强制性地", pinyin: "qiáng zhì xìng de", meaning: "강제적으로", step: 3, stepMap: { 1: 8, 3: 3 } },
-                            { type: "text", value: "阻止海平面升高可能导致气温快速下降。温度骤降的危害性可能会超过因碳排放导致全球变暖所带来的危害性，" },
-                            { type: "blank", value: "温度下降的速度超过了地球上动植物所能适应的程度", pinyin: "wēn dù xià jiàng de sù dù chāo guò le dì qiú shàng dòng zhí wù suǒ néng shì yìng de chéng dù", meaning: "온도 하강 속도가 지구상의 동식물이 적응할 수 있는 정도를 초과하다", step: 4, stepMap: { 1: 9, 4: 2 } },
-                            { type: "text", value: "，将是人们需要面对的另一个大问题。" }
-                        ]
-                    }
-                },
-                { 
-                    id: 6, level: '6급', category: '읽기 훈련', title: '[모의고사 2] 위저의 직업 설계', type: 'Scaffold Cloze', status: '활성', date: '2026-04-06', isLegacy: false,
-                    taskData: {
-                        dictionaryList: [
-                            { word: "首席执行官", pinyin: "shǒu xí zhí xíng guān", mean: "최고 경영자" },
-                            { word: "短板", pinyin: "duǎn bǎn", mean: "단점, 약점" },
-                            { word: "察言观色", pinyin: "chá yán guān sè", mean: "눈치를 보다" },
-                            { word: "扶摇直上", pinyin: "fú yáo zhí shàng", mean: "급격히 상승하다" },
-                            { word: "自己的成功固然有偶然因素", pinyin: "zì jǐ de chéng gōng gù rán yǒu ǒu rán yīn sù", mean: "자신의 성공에는 물론 우연한 요소도 있다" },
-                            { word: "而是要着眼于自己的职业前途", pinyin: "ér shì yào zhuó yǎn yú zì jǐ de zhí yè qián tú", mean: "오히려 자신의 직업적 미래에 착안해야 한다" },
-                            { word: "止步不前", pinyin: "zhǐ bù bù qián", mean: "제자리에 머물다" },
-                            { word: "淘汰", pinyin: "táo tài", mean: "도태되다" }
-                        ],
-                        correctAnswers: {
-                            1: { 1: "首席执行官", 2: "自己的成功固然有偶然因素", 3: "短板", 4: "察言观色", 5: "扶摇直上", 6: "而是要着眼于自己的职业前途", 7: "止步不前", 8: "淘汰" },
-                            2: { 1: "首席执行官", 2: "短板", 3: "淘汰" },
-                            3: { 1: "察言观色", 2: "扶摇直上", 3: "止步不前" },
-                            4: { 1: "自己的成功固然有偶然因素", 2: "而是要着眼于自己的职业前途" }
-                        },
-                        tokens: [
-                            { type: "text", value: "24岁担任万国证券管理总部的副总经理，到37岁成为阿里巴巴的" },
-                            { type: "blank", value: "首席执行官", pinyin: "shǒu xí zhí xíng guān", meaning: "최고 경영자", step: 2, stepMap: { 1: 1, 2: 1 } },
-                            { type: "text", value: "的卫哲，成了比孙振耀、唐骏更值钱的“金领”。这时，他的第一任老板——管金生给他的评价却是：“卫哲不聪明。”对此，卫哲并不否认，同时他也表示：" },
-                            { type: "blank", value: "自己的成功固然有偶然因素", pinyin: "zì jǐ de chéng gōng gù rán yǒu ǒu rán yīn sù", meaning: "자신의 성공에는 물론 우연한 요소도 있다", step: 4, stepMap: { 1: 2, 4: 1 } },
-                            { type: "text", value: "，但更重要的是他在职业规划中不断地拉长自己的“" },
-                            { type: "blank", value: "短板", pinyin: "duǎn bǎn", meaning: "단점, 약점", step: 2, stepMap: { 1: 3, 2: 2 } },
-                            { type: "text", value: "”。1993年，上海外国语大学英语专业毕业的卫哲进入了万国证券，工作是为万国证券翻译年报。工作中的卫哲很虚心，也很勤奋，加上善于" },
-                            { type: "blank", value: "察言观色", pinyin: "chá yán guān sè", meaning: "눈치를 보다", step: 3, stepMap: { 1: 4, 3: 1 } },
-                            { type: "text", value: "，一年之后，卫哲" },
-                            { type: "blank", value: "扶摇直上", pinyin: "fú yáo zhí shàng", meaning: "급격히 상승하다", step: 3, stepMap: { 1: 5, 3: 2 } },
-                            { type: "text", value: "，成了万国证券管理总部的副总经理。要想获得发展，就不能满足于当前的职业能力，" },
-                            { type: "blank", value: "而是要着眼于自己的职业前途", pinyin: "ér shì yào zhuó yǎn yú zì jǐ de zhí yè qián tú", meaning: "오히려 자신의 직업적 미래에 착안해야 한다", step: 4, stepMap: { 1: 6, 4: 2 } },
-                            { type: "text", value: "。如果" },
-                            { type: "blank", value: "止步不前", pinyin: "zhǐ bù bù qián", meaning: "제자리에 머물다", step: 3, stepMap: { 1: 7, 3: 3 } },
-                            { type: "text", value: "，也许现在还有适合你的岗位，但随着科技的发展、机械化的普及，你就会被逐渐" },
-                            { type: "blank", value: "淘汰", pinyin: "táo tài", meaning: "도태되다", step: 2, stepMap: { 1: 8, 2: 3 } },
-                            { type: "text", value: "。所以，要有职业危机意识，结合自己的个性，努力拉长自己的“短板”，才能不断进步。" }
-                        ]
-                    }
-                },
-                { 
-                    id: 7, level: '6급', category: '읽기 훈련', title: '[모의고사 3] 나무늘보의 생존 방식', type: 'Scaffold Cloze', status: '활성', date: '2026-04-06', isLegacy: false,
-                    taskData: {
-                        dictionaryList: [
-                            { word: "栖息", pinyin: "qī xī", mean: "서식하다" },
-                            { word: "它的运动速度比地球上其他任何哺乳动物都要慢", pinyin: "tā de yùn dòng sù dù bǐ dì qiú shàng qí tā rèn hé bǔ rǔ dòng wù dōu yào màn", mean: "그것의 이동 속도는 지구상의 다른 어떤 포유동물보다 느리다" },
-                            { word: "闻名世界", pinyin: "wén míng shì jiè", mean: "세계적으로 유명하다" },
-                            { word: "嗜睡者", pinyin: "shì shuì zhě", mean: "기면증 환자" },
-                            { word: "避免能量的损耗", pinyin: "bì miǎn néng liàng de sǔn hào", mean: "에너지 소모를 피하다" },
-                            { word: "伪装", pinyin: "wěi zhuāng", mean: "위장" },
-                            { word: "并从这个“藻类装”里获取营养", pinyin: "bìng cóng zhè ge “zǎo lèi zhuāng” lǐ huò qǔ yíng yǎng", mean: "그리고 이 '조류 옷'에서 영양분을 얻는다" }
-                        ],
-                        correctAnswers: {
-                            1: { 1: "栖息", 2: "它的运动速度比地球上其他任何哺乳动物都要慢", 3: "闻名世界", 4: "嗜睡者", 5: "避免能量的损耗", 6: "伪装", 7: "并从这个“藻类装”里获取营养" },
-                            2: { 1: "栖息", 2: "嗜睡者", 3: "伪装" },
-                            3: { 1: "闻名世界", 2: "避免能量的损耗" },
-                            4: { 1: "它的运动速度比地球上其他任何哺乳动物都要慢", 2: "并从这个“藻类装”里获取营养" }
-                        },
-                        tokens: [
-                            { type: "text", value: "树懒是" },
-                            { type: "blank", value: "栖息", pinyin: "qī xī", meaning: "서식하다", step: 2, stepMap: { 1: 1, 2: 1 } },
-                            { type: "text", value: "在树上的一种食草动物。" },
-                            { type: "blank", value: "它的运动速度比地球上其他任何哺乳动物都要慢", pinyin: "tā de yùn dòng sù dù bǐ dì qiú shàng qí tā rèn hé bǔ rǔ dòng wù dōu yào màn", meaning: "그것의 이동 속도는 지구상의 다른 어떤 포유동물보다 느리다", step: 4, stepMap: { 1: 2, 4: 1 } },
-                            { type: "text", value: "，并且以“一天的行进距离不超过38米”而" },
-                            { type: "blank", value: "闻名世界", pinyin: "wén míng shì jiè", meaning: "세계적으로 유명하다", step: 3, stepMap: { 1: 3, 3: 1 } },
-                            { type: "text", value: "。1983年，一个研究小组对被捕获的树懒进行了观察研究，发现它们一天要睡16小时，因此将它们称为动物王国里的重度" },
-                            { type: "blank", value: "嗜睡者", pinyin: "shì shuì zhě", meaning: "기면증 환자", step: 2, stepMap: { 1: 4, 2: 2 } },
-                            { type: "text", value: "。要想在这种能量摄入极低的饮食方式下正常生活，树懒只能通过缓慢移动之类的方法来" },
-                            { type: "blank", value: "避免能量的损耗", pinyin: "bì miǎn néng liàng de sǔn hào", meaning: "에너지 소모를 피하다", step: 3, stepMap: { 1: 5, 3: 2 } },
-                            { type: "text", value: "。在树叶稀少的时候，树懒也不需要为食物担心。因为它们的皮毛有淡淡的绿色，能帮助它们躲过捕食者。这种" },
-                            { type: "blank", value: "伪装", pinyin: "wěi zhuāng", meaning: "위장", step: 2, stepMap: { 1: 6, 2: 3 } },
-                            { type: "text", value: "不是色素，而是藻类。自然潮湿的生活环境，让树懒的皮毛中能够形成藻类。树懒可以舔食自己的皮毛，" },
-                            { type: "blank", value: "并从这个“藻类装”里获取营养", pinyin: "bìng cóng zhè ge “zǎo lèi zhuāng” lǐ huò qǔ yíng yǎng", meaning: "그리고 이 '조류 옷'에서 영양분을 얻는다", step: 4, stepMap: { 1: 7, 4: 2 } },
-                            { type: "text", value: "。" }
-                        ]
-                    }
-                }
-            ]);
+            useEffect(() => {
+                localStorage.setItem('hsktc_submissions', JSON.stringify(submissions));
+            }, [submissions]);
+
+            useEffect(() => {
+                localStorage.setItem('hsktc_tasks', JSON.stringify(tasks));
+            }, [tasks]);
 
             const handleAddSubmission = (data) => {
                 const newSub = {
                     id: `SUB-${Math.floor(Math.random() * 100000)}`,
                     studentId: userInfo.id,
                     studentName: userInfo.name,
-                    submittedAt: new Date(),
+                    submittedAt: new Date().toISOString(),
                     status: 'pending',
                     ...data
                 };
@@ -231,7 +115,7 @@
             };
 
             const handleApproveSubmission = (id) => {
-                setSubmissions(prev => prev.map(s => s.id === id ? { ...s, status: 'approved', approvedAt: new Date() } : s));
+                setSubmissions(prev => prev.map(s => s.id === id ? { ...s, status: 'approved', approvedAt: new Date().toISOString() } : s));
             };
 
             const handleSaveNewTask = (newTaskData) => {
@@ -274,12 +158,30 @@
                     setUserInfo({ name: "이준호", email, id: "ADMIN-001", isAdmin: true });
                     setAcademyLoggedIn(true);
                     setActiveMenu('admin');
-                } else if(password === "HSK300" && email.trim() !== "") {
-                    const name = email.split('@')[0] || "학생"; 
-                    setUserInfo({ name, email, id: `STU-${Math.floor(Math.random()*10000)}`, isAdmin: false });
-                    setAcademyLoggedIn(true);
-                    setActiveMenu('cloze');
+                    return true;
+                } else if(email.trim() !== "") {
+                    const students = JSON.parse(localStorage.getItem('hsktc_students')) || [];
+                    const student = students.find(s => s.email === email);
+
+                    if (!student) {
+                        return "등록되지 않은 학생 계정입니다.";
+                    }
+                    if (student.status !== '활성') {
+                        return "선생님의 계정 승인이 대기 중입니다. 승인 후 로그인해주세요.";
+                    }
+
+                    // 저장된 패스워드 로드 (없으면 기본값 HSK300)
+                    const savedPassword = localStorage.getItem(`hsktc_pw_${email}`) || 'HSK300';
+                    if (password === savedPassword) {
+                        setUserInfo({ name: student.name, email, id: student.id, isAdmin: false });
+                        setAcademyLoggedIn(true);
+                        setActiveMenu('cloze');
+                        return true;
+                    } else {
+                        return "PW가 일치하지 않습니다.";
+                    }
                 }
+                return "ID와 PW를 입력해주세요.";
             };
 
             const handleLogout = () => {
@@ -297,7 +199,7 @@
 
             return (
                 <div className="flex h-screen bg-gray-50 overflow-hidden text-gray-800">
-                    <Sidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} handleLogout={handleLogout} userName={userInfo.name} isAdmin={userInfo.isAdmin} />
+                    <Sidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} handleLogout={handleLogout} userName={userInfo.name} isAdmin={userInfo.isAdmin} onChangePassword={() => setShowPasswordChange(true)} />
                     <main className="flex-1 overflow-y-auto p-6 md:p-10">
                         <header className="mb-8 border-b pb-4 flex justify-between items-center">
                             <div>
@@ -316,6 +218,70 @@
                             {activeMenu === 'admin' && userInfo.isAdmin && <AdminDashboard submissions={submissions} onApprove={handleApproveSubmission} tasks={tasks} setTasks={setTasks} onSaveNewTask={handleSaveNewTask} />}
                         </div>
                     </main>
+
+                    {showPasswordChange && <PasswordChangeModal email={userInfo.email} onClose={() => setShowPasswordChange(false)} />}
+                </div>
+            );
+        };
+
+        const PasswordChangeModal = ({ email, onClose }) => {
+            const [oldPw, setOldPw] = useState('');
+            const [newPw, setNewPw] = useState('');
+            const [confirmPw, setConfirmPw] = useState('');
+            const [error, setError] = useState('');
+
+            const handleSave = () => {
+                setError('');
+                const savedPassword = localStorage.getItem(`hsktc_pw_${email}`) || 'HSK300';
+                if(oldPw !== savedPassword) {
+                    setError('기존 비밀번호가 일치하지 않습니다.');
+                    return;
+                }
+                if(newPw.length < 4) {
+                    setError('새 비밀번호는 4자리 이상이어야 합니다.');
+                    return;
+                }
+                if(newPw !== confirmPw) {
+                    setError('새 비밀번호 확인이 일치하지 않습니다.');
+                    return;
+                }
+                
+                localStorage.setItem(`hsktc_pw_${email}`, newPw);
+                onClose();
+            };
+
+            return (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-200">
+                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-2xl">
+                            <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
+                                <Icon name="Lock" size={18} className="text-indigo-600" />
+                                비밀번호 변경
+                            </h3>
+                            <button onClick={onClose} className="text-gray-400 hover:text-gray-700 hover:bg-gray-100 p-1.5 rounded-lg transition-colors">
+                                <Icon name="X" size={20} />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            {error && <div className="text-rose-500 text-xs font-bold bg-rose-50 p-2.5 rounded-lg border border-rose-100">{error}</div>}
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">기존 비밀번호</label>
+                                <input type="password" value={oldPw} onChange={e => {setOldPw(e.target.value); setError('');}} className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-indigo-500 outline-none text-sm tracking-widest" placeholder="••••••••" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">새 비밀번호</label>
+                                <input type="password" value={newPw} onChange={e => {setNewPw(e.target.value); setError('');}} className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-indigo-500 outline-none text-sm tracking-widest" placeholder="••••••••" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">새 비밀번호 확인</label>
+                                <input type="password" value={confirmPw} onChange={e => {setConfirmPw(e.target.value); setError('');}} className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-indigo-500 outline-none text-sm tracking-widest" placeholder="••••••••" />
+                            </div>
+                        </div>
+                        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 rounded-b-2xl flex justify-end gap-3">
+                            <button onClick={onClose} className="px-5 py-2 rounded-xl font-bold text-gray-600 hover:bg-gray-200 transition-colors text-sm">취소</button>
+                            <button onClick={handleSave} className="px-6 py-2 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors shadow-md text-sm">변경 저장</button>
+                        </div>
+                    </div>
                 </div>
             );
         };
@@ -326,10 +292,9 @@
             const [error, setError] = useState('');
 
             const handleSubmit = () => {
-                if ((email === "yijoonho@hsktc.com" && password === "3300") || (password === "HSK300" && email.trim() !== "")) {
-                    onLogin(email, password);
-                } else {
-                    setError('학원 계정(이메일)과 정확한 비밀번호를 입력해주세요.');
+                const result = onLogin(email, password);
+                if (result !== true) {
+                    setError(typeof result === 'string' ? result : 'ID와 정확한 PW를 입력해주세요.');
                 }
             };
 
@@ -340,13 +305,13 @@
                             <Icon name="Archive" size={26} className="text-[#3b82f6]" />
                         </div>
                         <h1 className="text-3xl font-bold text-white tracking-tight mb-3">
-                            HSKTC <span className="text-[#3b82f6] font-normal">Cloze Master</span>
+                            HSK <span className="text-[#3b82f6] font-normal">Training Center</span>
                         </h1>
                         <p className="text-[10px] text-gray-400 tracking-[0.25em] mb-10 font-medium">
-                            SCAFFOLD CLOZE & STUDENT MANAGEMENT
+                            SCAFFOLD CLOZE SYSTEM
                         </p>
                         <p className="text-gray-200 text-[15px] leading-relaxed">
-                            "HSK 3.0 빈칸 훈련 및 학사 관리의 모든 것"
+                            "HSK 3.0 인출 연습을 통한 장기 기억 형성"
                         </p>
                     </div>
 
@@ -364,7 +329,7 @@
                         <div className="p-7 space-y-5">
                             {error && <div className="bg-rose-50 text-rose-500 text-xs font-bold p-3 rounded-lg text-center animate-in fade-in zoom-in-95">{error}</div>}
                             <div>
-                                <label className="block text-[13px] font-bold text-gray-700 mb-2">학원 계정 (이메일)</label>
+                                <label className="block text-[13px] font-bold text-gray-700 mb-2">ID</label>
                                 <input 
                                     type="email" 
                                     value={email} 
@@ -374,7 +339,7 @@
                                 />
                             </div>
                             <div>
-                                <label className="block text-[13px] font-bold text-gray-700 mb-2">접속 비밀번호</label>
+                                <label className="block text-[13px] font-bold text-gray-700 mb-2">PW</label>
                                 <input 
                                     type="password" 
                                     value={password} 
@@ -401,7 +366,7 @@
             );
         };
 
-        const Sidebar = ({ activeMenu, setActiveMenu, handleLogout, userName, isAdmin }) => {
+        const Sidebar = ({ activeMenu, setActiveMenu, handleLogout, userName, isAdmin, onChangePassword }) => {
             const menuItems = isAdmin ? [
                 { id: 'admin', label: '관리자 대시보드', icon: 'LayoutDashboard' }
             ] : [
@@ -442,7 +407,12 @@
                         ))}
                     </div>
 
-                    <div className="p-5 border-t border-gray-50 mt-auto">
+                    <div className="p-5 border-t border-gray-50 mt-auto space-y-2">
+                        {!isAdmin && (
+                            <button onClick={onChangePassword} className="w-full flex items-center justify-center gap-2 p-3 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all font-bold text-sm">
+                                <Icon name="Lock" size={18} /> 비밀번호 변경
+                            </button>
+                        )}
                         <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 p-3 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all font-bold text-sm">
                             <Icon name="LogOut" size={18} /> 로그아웃
                         </button>
@@ -454,7 +424,6 @@
         const ClozeModule = ({ setActiveMenu, onSubmit, tasks, submissions, userInfo }) => {
             const [activeTask, setActiveTask] = useState(null);
 
-            // Filter active Scaffold Cloze tasks
             const clozeTasks = tasks.filter(t => t.type === 'Scaffold Cloze' && t.status === '활성');
 
             if (activeTask) {
@@ -495,7 +464,7 @@
                                     <div className="mt-auto pt-4 flex items-center justify-between border-t border-gray-50">
                                         {isSubmitted ? (
                                             <span className="text-sm font-bold text-green-500 flex items-center gap-1 w-full justify-center bg-green-50 py-2 rounded-xl">
-                                                <Icon name="CheckCircle" size={16}/> 제출 완료
+                                                <Icon name="CheckCircle" size={16}/> 제출 완료 (기록에서 확인)
                                             </span>
                                         ) : (
                                             <button onClick={() => setActiveTask(task)} className="w-full bg-indigo-50 text-indigo-700 py-2 rounded-xl text-sm font-bold hover:bg-indigo-600 hover:text-white transition-colors flex items-center justify-center gap-2">
@@ -506,7 +475,7 @@
                                 </div>
                             )
                         }) : (
-                            <div className="col-span-full text-center py-12 text-gray-500">배정된 빈칸 훈련 과제가 없습니다.</div>
+                            <div className="col-span-full text-center py-12 text-gray-500">배정된 빈칸 훈련 과제가 없습니다. 관리자에게 문의하세요.</div>
                         )}
                     </div>
                 </div>
@@ -539,64 +508,21 @@
             }
         };
 
-        const ClozeSystem = ({ setActiveMenu, onSubmit, taskConfig }) => {
-            const [step, setStep] = useState(1);
-            const [inputs, setInputs] = useState({ 1: {}, 2: {}, 3: {}, 4: {} });
+        const ClozeSystem = ({ setActiveMenu, onSubmit, taskConfig, reviewData }) => {
+            const [step, setStep] = useState(reviewData ? 5 : 1);
+            const [inputs, setInputs] = useState(reviewData ? reviewData.inputs : { 1: {}, 2: {}, 3: {}, 4: {} });
             const [isEvaluating, setIsEvaluating] = useState(false);
-            const [evaluationResults, setEvaluationResults] = useState({ 1: null, 2: null, 3: null, 4: null });
-            const [scores, setScores] = useState({ 1: 0, 2: 0, 3: 0, 4: 0 });
-            const [evaluatedSteps, setEvaluatedSteps] = useState({ 1: false, 2: false, 3: false, 4: false });
+            const [evaluationResults, setEvaluationResults] = useState(reviewData ? reviewData.evaluationResults : { 1: null, 2: null, 3: null, 4: null });
+            const [scores, setScores] = useState(reviewData ? reviewData.scores : { 1: 0, 2: 0, 3: 0, 4: 0 });
+            const [evaluatedSteps, setEvaluatedSteps] = useState(reviewData ? { 1: true, 2: true, 3: true, 4: true } : { 1: false, 2: false, 3: false, 4: false });
 
             const isDynamic = taskConfig ? !taskConfig.isLegacy : false;
             const dynamicData = isDynamic && taskConfig ? taskConfig.taskData : null;
             const currentTitle = taskConfig ? taskConfig.title : '';
 
-            const correctAnswers = isDynamic && dynamicData ? dynamicData.correctAnswers : {
-                1: {
-                    1: "博客", 2: "陈旧", 3: "当今社会知识更新的速度加快", 4: "倍增", 5: "知识爆炸",
-                    6: "应付一辈子", 7: "已完全不可能了", 8: "终身教育", 9: "单一", 10: "激烈",
-                    11: "司空见惯", 12: "害怕", 13: "日子会不好过", 14: "积压物资", 15: "唯一的办法就是多学几手",
-                    16: "一专多能", 17: "一棵树上吊死", 18: "脆弱", 19: "打退堂鼓", 20: "稍有不顺利情绪就降为零",
-                    21: "这样的人在今后的竞争中必然不易成功", 22: "节奏", 23: "竞争压力加大", 24: "障碍", 25: "第四种是目光短浅的人",
-                    26: "鼠目寸光", 27: "你能看多远，你便能走多远", 28: "规划", 29: "不吃香", 30: "以后更不受欢迎"
-                },
-                2: { 1: "博客", 2: "陈旧", 3: "倍增", 4: "单一", 5: "激烈", 6: "害怕", 7: "脆弱", 8: "节奏", 9: "障碍", 10: "规划" },
-                3: { 1: "知识爆炸", 2: "应付一辈子", 3: "终身教育", 4: "司空见惯", 5: "积压物资", 6: "一专多能", 7: "一棵树上吊死", 8: "打退堂鼓", 9: "鼠目寸光", 10: "不吃香" },
-                4: { 1: "当今社会知识更新的速度加快", 2: "已完全不可能了", 3: "日子会不好过", 4: "唯一的办法就是多学几手", 5: "稍有不顺利情绪就降为零", 6: "这样的人在今后的竞争中必然不易成功", 7: "竞争压力加大", 8: "第四种是目光短浅的人", 9: "你能看多远，你便能走多远", 10: "以后更不受欢迎" }
-            };
-
-            const dictionaryList = isDynamic && dynamicData ? dynamicData.dictionaryList : [
-                { word: "博客", pinyin: "bókè", mean: "블로그" },
-                { word: "陈旧", pinyin: "chénjiù", mean: "낡다, 진부하다" },
-                { word: "当今社会知识更新的速度加快", pinyin: "dāngjīn shèhuì zhīshì gēngxīn de sùdù jiākuài", mean: "오늘날 사회는 지식 갱신 속도가 빨라진다" },
-                { word: "倍增", pinyin: "bèizēng", mean: "배가되다, 급증하다" },
-                { word: "知识爆炸", pinyin: "zhīshì bàozhà", mean: "지식 폭발" },
-                { word: "应付一辈子", pinyin: "yìngfù yíbèizi", mean: "평생을 대처하다" },
-                { word: "已完全不可能了", pinyin: "yǐ wánquán bù kěnéng le", mean: "이미 완전히 불가능해졌다" },
-                { word: "终身教育", pinyin: "zhōngshēn jiàoyù", mean: "평생 교육" },
-                { word: "单一", pinyin: "dānyī", mean: "단일하다, 단순하다" },
-                { word: "激烈", pinyin: "jīliè", mean: "치열하다, 격렬하다" },
-                { word: "司空见惯", pinyin: "sīkōng jiànguàn", mean: "자주 보아 예사롭다" },
-                { word: "害怕", pinyin: "hàipà", mean: "두려워하다" },
-                { word: "日子会不好过", pinyin: "rìzi huì bù hǎoguò", mean: "생활이 힘들어질 것이다" },
-                { word: "积压物资", pinyin: "jīyā wùzī", mean: "체화 물자, 쌓인 재고" },
-                { word: "唯一的办法就是多学几手", pinyin: "wéiyī de bànfǎ jiùshì duō xué jǐ shǒu", mean: "유일한 방법은 몇 가지 기술을 더 배우는 것이다" },
-                { word: "一专多能", pinyin: "yìzhuānduōnéng", mean: "한 가지 전문 지식과 여러 능력을 갖추다" },
-                { word: "一棵树上吊死", pinyin: "yì kē shù shàng diàosǐ", mean: "한 나무에 목매어 죽다, 융통성이 없다" },
-                { word: "脆弱", pinyin: "cuìruò", mean: "연약하다, 취약하다" },
-                { word: "打退堂鼓", pinyin: "dǎ tuìtánggǔ", mean: "꽁무니를 빼다, 중도에 포기하다" },
-                { word: "稍有不顺利情绪就降为零", pinyin: "shāo yǒu bù shùnlì qíngxù jiù jiàng wéi líng", mean: "조금만 순조롭지 않아도 의욕이 바닥으로 떨어진다" },
-                { word: "这样的人在今后的竞争中必然不易成功", pinyin: "zhèyàng de rén zài jīn hòu de jìngzhēng zhōng bìrán bù yì chénggōng", mean: "이런 사람은 향후 경쟁에서 결코 성공하기 쉽지 않다" },
-                { word: "节奏", pinyin: "jiézòu", mean: "리듬, 템포" },
-                { word: "竞争压力加大", pinyin: "jìngzhēng yālì jiādà", mean: "경쟁 압력이 커지다" },
-                { word: "障碍", pinyin: "zhàng'ài", mean: "장애" },
-                { word: "第四种是目光短浅的人", pinyin: "dì sì zhǒng shì mùguāng duǎnqiǎn de rén", mean: "네 번째는 근시안적인 사람이다" },
-                { word: "鼠目寸光", pinyin: "shǔmùcùnguāng", mean: "쥐의 눈처럼 근시안적이다" },
-                { word: "你能看多远，你便能走多远", pinyin: "nǐ néng kàn duō yuǎn, nǐ biàn néng zǒu duō yuǎn", mean: "당신이 멀리 볼 수 있는 만큼 멀리 갈 수 있다" },
-                { word: "规划", pinyin: "guīhuà", mean: "계획, 기획" },
-                { word: "不吃香", pinyin: "bù chīxiāng", mean: "인기가 없다, 환영받지 못하다" },
-                { word: "以后更不受欢迎", pinyin: "yǐhòu gèng bù shòu huānyíng", mean: "나중에는 더욱 환영받지 못할 것이다" }
-            ];
+            // 빈 데이터 방어 코드 (오류 방지)
+            const correctAnswers = isDynamic && dynamicData && dynamicData.correctAnswers ? dynamicData.correctAnswers : { 1: {}, 2: {}, 3: {}, 4: {} };
+            const dictionaryList = isDynamic && dynamicData && dynamicData.dictionaryList ? dynamicData.dictionaryList : [];
 
             const handleSubmit = () => {
                 let earned = 0; let totalP = 0;
@@ -611,13 +537,16 @@
                 
                 onSubmit({
                     title: currentTitle,
-                    type: 'reading',
-                    score: finalScore
+                    type: 'Scaffold Cloze',
+                    score: finalScore,
+                    taskConfig: taskConfig,
+                    reviewData: { inputs, evaluationResults, scores }
                 });
                 setActiveMenu('archive');
             };
 
             const handleInputChange = (targetStep, index, value) => {
+                if(reviewData) return; // 복습 모드에서는 입력 불가
                 setInputs(prev => ({
                     ...prev,
                     [targetStep]: {
@@ -645,8 +574,9 @@
                     return;
                 }
 
-                const apiKey = ""; 
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                const apiKey = localStorage.getItem('hsktc_api_key') || ""; 
+                const apiModel = localStorage.getItem('hsktc_api_model') || "gemini-1.5-flash";
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${apiModel}:generateContent?key=${apiKey}`;
                 const promptText = `당신은 학생들을 진심으로 응원하고 칭찬하는 다정한 HSK 중국어 선생님입니다.
 학생이 중국어 빈칸 채우기 과제인 Scaffold Cloze System 의 Step ${step} 문제를 방금 풀었습니다.
 
@@ -693,23 +623,32 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                 const maxRetries = 5;
                 const delays = [1000, 2000, 4000, 8000, 16000];
 
-                for (let i = 0; i < maxRetries; i++) {
-                    try {
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        if (!response.ok) throw new Error('API Request Failed');
-                        const data = await response.json();
-                        const textData = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] ? data.candidates[0].content.parts[0].text : null;
-                        if(textData) {
-                            resultObj = JSON.parse(textData);
-                            break;
+                if (apiKey) {
+                    for (let i = 0; i <= maxRetries; i++) {
+                        try {
+                            const response = await fetch(url, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(payload)
+                            });
+                            if (!response.ok) {
+                                const errData = await response.json();
+                                throw new Error(errData.error?.message || 'API Request Failed');
+                            }
+                            const data = await response.json();
+                            const textData = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                            if(textData) {
+                                resultObj = JSON.parse(textData);
+                                break;
+                            }
+                        } catch (err) {
+                            if (i < maxRetries && !err.message.includes('not found') && !err.message.includes('not supported')) {
+                                await new Promise(r => setTimeout(r, delays[i]));
+                            } else {
+                                console.error("AI Evaluation Error:", err);
+                                break;
+                            }
                         }
-                    } catch (err) {
-                        console.error(err);
-                        await new Promise(r => setTimeout(r, delays[i]));
                     }
                 }
 
@@ -719,9 +658,9 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                         if((inputs[step] && inputs[step][i] ? inputs[step][i] : '').trim() === correctAnswers[step][i]) mockScore++;
                     }
                     resultObj = {
-                        totalScore: Math.round((mockScore/totalItems)*100) || 0,
+                        totalScore: totalItems > 0 ? Math.round((mockScore/totalItems)*100) : 0,
                         evaluations: Object.keys(correctAnswers[step]).map(id => ({ id: parseInt(id), isCorrect: (inputs[step] && inputs[step][id] ? inputs[step][id] : '').trim() === correctAnswers[step][id], isPartial: false, feedback: `정답은 '${correctAnswers[step][id]}' 입니다.` })),
-                        teacherMessage: `채점 시스템 응답 지연으로 자동 채점되었습니다. (100점 만점 중 ${Math.round((mockScore/totalItems)*100)}점)`
+                        teacherMessage: `자동 채점되었습니다. (100점 만점 중 ${totalItems > 0 ? Math.round((mockScore/totalItems)*100) : 0}점)`
                     };
                 }
 
@@ -740,7 +679,7 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                     const widthStyle = { width: isClause ? `min(100%, max(10rem, ${answer.length * 1.1}em))` : `max(3.5rem, ${answer.length * 1.3}em)` };
                     const userText = (inputs[currentStep] && inputs[currentStep][index] ? inputs[currentStep][index] : '').trim();
 
-                    if (evaluatedSteps[currentStep]) {
+                    if (evaluatedSteps[currentStep] || reviewData) {
                         const exactMatch = userText === correctAnswers[currentStep][index];
                         const evalData = evaluationResults[currentStep] && evaluationResults[currentStep].evaluations ? evaluationResults[currentStep].evaluations.find(e => e.id === index) : null;
                         
@@ -769,6 +708,7 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                                 value={inputs[currentStep] && inputs[currentStep][index] ? inputs[currentStep][index] : ''}
                                 onChange={(e) => handleInputChange(currentStep, index, e.target.value)}
                                 placeholder={currentStep === 1 ? answer : ""}
+                                readOnly={reviewData !== undefined}
                                 className={`border-b-2 px-1 pb-1 text-center outline-none transition-all font-sans text-base max-w-full 
                                 ${currentStep === 1 
                                     ? "border-dashed border-gray-400 text-blue-700 bg-gray-50 focus:bg-white placeholder-gray-400/50 focus:placeholder-transparent" 
@@ -804,8 +744,8 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                         <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
                             <Icon name="CheckCircle" size={32} />
                         </div>
-                        <h3 className="text-2xl font-bold text-gray-800">학습 완료!</h3>
-                        <p className="text-gray-500 mb-6">모든 단계의 빈칸 학습과 채점을 완료했습니다.</p>
+                        <h3 className="text-2xl font-bold text-gray-800">{reviewData ? '학습 복습' : '학습 완료!'}</h3>
+                        <p className="text-gray-500 mb-6">{reviewData ? '제출된 답안과 채점 결과를 확인 중입니다.' : '모든 단계의 빈칸 학습과 채점을 완료했습니다.'}</p>
                         
                         <div className="bg-gray-50 rounded-xl p-6 w-full max-w-md border border-gray-200">
                             <h4 className="font-bold text-gray-700 mb-4">단계별 결과 요약 (100점 만점)</h4>
@@ -825,14 +765,28 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                         </div>
 
                         <div className="flex gap-3 mt-4">
-                            <button onClick={() => {
-                                setStep(1); setInputs({1:{},2:{},3:{},4:{}}); setEvaluatedSteps({1:false,2:false,3:false,4:false}); setScores({1:0,2:0,3:0,4:0}); setEvaluationResults({1:null,2:null,3:null,4:null});
-                            }} className="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors">
-                                처음부터 다시하기
-                            </button>
-                            <button onClick={handleSubmit} className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors shadow-md">
-                                과제 최종 제출하기
-                            </button>
+                            {!reviewData && (
+                                <button onClick={() => {
+                                    setStep(1); setInputs({1:{},2:{},3:{},4:{}}); setEvaluatedSteps({1:false,2:false,3:false,4:false}); setScores({1:0,2:0,3:0,4:0}); setEvaluationResults({1:null,2:null,3:null,4:null});
+                                }} className="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors">
+                                    처음부터 다시하기
+                                </button>
+                            )}
+                            
+                            {reviewData ? (
+                                <div className="flex gap-3">
+                                    <button onClick={() => setStep(1)} className="px-6 py-2.5 rounded-xl bg-gray-100 text-gray-700 font-bold hover:bg-gray-200 transition-colors shadow-sm">
+                                        지문 다시 보기
+                                    </button>
+                                    <button onClick={() => setActiveMenu('archive')} className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors shadow-md">
+                                        복습 종료 (목록으로)
+                                    </button>
+                                </div>
+                            ) : (
+                                <button onClick={handleSubmit} className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors shadow-md">
+                                    과제 최종 제출하기
+                                </button>
+                            )}
                         </div>
                     </div>
                 );
@@ -844,9 +798,9 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                         <h3 className="text-xl font-bold">{currentTitle}</h3>
                         <div className="flex gap-2">
                             {[1, 2, 3, 4].map(s => (
-                                <div key={s} className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${step === s ? 'bg-indigo-600 text-white shadow-md scale-110 transition-transform' : step > s ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
-                                    {step > s ? <Icon name="CheckCircle" size={16}/> : s}
-                                </div>
+                                <button key={s} onClick={() => {if(reviewData) setStep(s);}} className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${step === s ? 'bg-indigo-600 text-white shadow-md scale-110 transition-transform' : (step > s || reviewData) ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'} ${reviewData ? 'cursor-pointer hover:bg-indigo-500' : 'cursor-default'}`}>
+                                    {(step > s || (reviewData && step !== s)) ? <Icon name="CheckCircle" size={16}/> : s}
+                                </button>
                             ))}
                         </div>
                     </div>
@@ -868,82 +822,7 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                                         })}
                                     </p>
                                 ) : (
-                                    <>
-                                        <p>
-                                            <T pinyin="Zài yí gè péngyǒu de " currentStep={step}>在一个朋友的</T>
-                                            {renderBlank({1: 1, 2: 1}, step, '博客', 'bókè')}
-                                            <T pinyin=" zhōng yǒu zhèyàng yī piān wénzhāng, tā bǎ shèhuì shàng bù chénggōng de rén fēnchéng yǐxià sì zhǒng lèixíng:" currentStep={step}>中有这样一篇文章，她把社会上不成功的人分成以下四种类型：</T>
-                                        </p>
-                                        <p>
-                                            <T pinyin="Dì yī zhǒng shì zhīshì " currentStep={step}>第一种是知识</T>
-                                            {renderBlank({1: 2, 2: 2}, step, '陈旧', 'chénjiù')}
-                                            <T pinyin=" de rén。" currentStep={step}>的人。</T>
-                                            {renderBlank({1: 3, 4: 1}, step, '当今社会知识更新的速度加快', 'dāngjīn shèhuì zhīshì gēngxīn de sùdù jiākuài')}
-                                            <T pinyin="，zhīshì " currentStep={step}>，知识</T>
-                                            {renderBlank({1: 4, 2: 3}, step, '倍增', 'bèizēng')}
-                                            <T pinyin=" de zhōuqī yuè lái yuè duǎn，rénlèi zhēnzhèng jìnrùle " currentStep={step}>的周期越来越短，人类真正进入了</T>
-                                            {renderBlank({1: 5, 3: 1}, step, '知识爆炸', 'zhīshì bàozhà')}
-                                            <T pinyin=" de shídài。Shēnghuó zài zhège shídài，rènhé rén dōu bìxū búduàn xuéxí，gēngxīn zhīshì，xiǎng kào xuéxiào xuédào de zhīshì " currentStep={step}>的时代。生活在这个时代，任何人都必须不断学习，更新知识，想靠学校学到的知识</T>
-                                            {renderBlank({1: 6, 3: 2}, step, '应付一辈子', 'yìngfù yíbèizi')}
-                                            <T pinyin="，" currentStep={step}>，</T>
-                                            {renderBlank({1: 7, 4: 2}, step, '已完全不可能了', 'yǐ wánquán bù kěnéng le')}
-                                            <T pinyin="，" currentStep={step}>，</T>
-                                            {renderBlank({1: 8, 3: 3}, step, '终身教育', 'zhōngshēn jiàoyù')}
-                                            <T pinyin=" yīng guànchuān rén de yìshēng。" currentStep={step}>应贯穿人的一生。</T>
-                                        </p>
-                                        <p>
-                                            <T pinyin="Dì èr zhǒng shì jìnéng " currentStep={step}>第二种是技能</T>
-                                            {renderBlank({1: 9, 2: 4}, step, '单一', 'dānyī')}
-                                            <T pinyin=" de rén。Shèhuì jìngzhēng yuè lái yuè " currentStep={step}>的人。社会竞争越来越</T>
-                                            {renderBlank({1: 10, 2: 5}, step, '激烈', 'jīliè')}
-                                            <T pinyin="，pínfán de jiùyè hé xiàgǎng jiāng chéngwéi " currentStep={step}>，频繁的就业和下岗将成为</T>
-                                            {renderBlank({1: 11, 3: 4}, step, '司空见惯', 'sīkōng jiànguàn')}
-                                            <T pinyin=" de shì。Zhǐ huì zuò yī zhǒng gōngzuò，huàn yí gè gǎngwèi jiù " currentStep={step}>的事。只会做一种工作，换一个岗位就</T>
-                                            {renderBlank({1: 12, 2: 6}, step, '害怕', 'hàipà')}
-                                            <T pinyin=" de rén，" currentStep={step}>的人，</T>
-                                            {renderBlank({1: 13, 4: 3}, step, '日子会不好过', 'rìzi huì bù hǎoguò')}
-                                            <T pinyin="。Yào xiǎng bìmiǎn zài zhíchǎng zhōng chéngwéi “" currentStep={step}>。要想避免在职场中成为“</T>
-                                            {renderBlank({1: 14, 3: 5}, step, '积压物资', 'jīyā wùzī')}
-                                            <T pinyin="”，" currentStep={step}>”，</T>
-                                            {renderBlank({1: 15, 4: 4}, step, '唯一的办法就是多学几手', 'wéiyī de bànfǎ jiùshì duō xué jǐ shǒu')}
-                                            <T pinyin="，" currentStep={step}>，</T>
-                                            {renderBlank({1: 16, 3: 6}, step, '一专多能', 'yìzhuānduōnéng')}
-                                            <T pinyin="，zhǐyǒu zhèyàng，cái bù zhìyú “" currentStep={step}>，只有这样，才不至于“</T>
-                                            {renderBlank({1: 17, 3: 7}, step, '一棵树上吊死', 'yì kē shù shàng diàosǐ')}
-                                            <T pinyin="”。" currentStep={step}>”。</T>
-                                        </p>
-                                        <p>
-                                            <T pinyin="Dì sān zhǒng shì xīnlǐ " currentStep={step}>第三种是心理</T>
-                                            {renderBlank({1: 18, 2: 7}, step, '脆弱', 'cuìruò')}
-                                            <T pinyin=" de rén。Yù dào yīdiǎnr kùnnán jiù " currentStep={step}>的人。遇到一点儿困难就</T>
-                                            {renderBlank({1: 19, 3: 8}, step, '打退堂鼓', 'dǎ tuìtánggǔ')}
-                                            <T pinyin="，" currentStep={step}>，</T>
-                                            {renderBlank({1: 20, 4: 5}, step, '稍有不顺利情绪就降为零', 'shāo yǒu bù shùnlì qíngxù jiù jiàng wéi líng')}
-                                            <T pinyin="，" currentStep={step}>，</T>
-                                            {renderBlank({1: 21, 4: 6}, step, '这样的人在今后的竞争中必然不易成功', 'zhèyàng de rén zài jīn hòu de jìngzhēng zhōng bìrán bù yì chénggōng')}
-                                            <T pinyin="。Yóuyú shēnghuó " currentStep={step}>。由于生活</T>
-                                            {renderBlank({1: 22, 2: 8}, step, '节奏', 'jiézòu')}
-                                            <T pinyin=" jiākuài，" currentStep={step}>加快，</T>
-                                            {renderBlank({1: 23, 4: 7}, step, '竞争压力加大', 'jìngzhēng yālì jiādà')}
-                                            <T pinyin="，yǒu xīnlǐ " currentStep={step}>，有心理</T>
-                                            {renderBlank({1: 24, 2: 9}, step, '障碍', 'zhàng\'ài')}
-                                            <T pinyin=" huò xīnlǐ jíbìng de rén zhújiàn zēngduō，shénjīng jǐnzhāng、xīnlǐ cuìruò chéngle dūshì xiàndàibìng。" currentStep={step}>或心理疾病的人逐渐增多，神经紧张、心理脆弱成了都市现代病。</T>
-                                        </p>
-                                        <p>
-                                            {renderBlank({1: 25, 4: 8}, step, '第四种是目光短浅的人', 'dì sì zhǒng shì mùguāng duǎnqiǎn de rén')}
-                                            <T pinyin="。" currentStep={step}>。</T>
-                                            {renderBlank({1: 26, 3: 9}, step, '鼠目寸光', 'shǔmùcùnguāng')}
-                                            <T pinyin=" nán chéng dàshì，mùguāng yuǎndà cái yì chénggōng。Yǒu jù huà shuō de hǎo：“" currentStep={step}>难成大事，目光远大才易成功。有句话说得好：“</T>
-                                            {renderBlank({1: 27, 4: 9}, step, '你能看多远，你便能走多远', 'nǐ néng kàn duō yuǎn, nǐ biàn néng zǒu duō yuǎn')}
-                                            <T pinyin="。” Yí gè zǔzhī de chéngzhǎng xūyào " currentStep={step}>。”一个组织的成长需要</T>
-                                            {renderBlank({1: 28, 2: 10}, step, '规划', 'guīhuà')}
-                                            <T pinyin="，yí gè rén de chéngzhǎng xūyào shèjì，zhǐ kànjiàn bíjiān xiàbiān yī xiǎo kuài dìfāng de rén，xiànzài " currentStep={step}>，一个人的成长需要设计，只看见鼻尖下边一小块地方的人，现在</T>
-                                            {renderBlank({1: 29, 3: 10}, step, '不吃香', 'bù chīxiāng')}
-                                            <T pinyin="，" currentStep={step}>，</T>
-                                            {renderBlank({1: 30, 4: 10}, step, '以后更不受欢迎', 'yǐhòu gèng bù shòu huānyíng')}
-                                            <T pinyin="。" currentStep={step}>。</T>
-                                        </p>
-                                    </>
+                                    <div className="text-center text-gray-500 italic py-10">원문 데이터가 없습니다.</div>
                                 )}
                             </div>
                         </div>
@@ -1004,7 +883,7 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                                     </div>
                                 )}
 
-                                {evaluatedSteps[step] && evaluationResults[step] && (
+                                {((evaluatedSteps[step]) || reviewData) && evaluationResults[step] && (
                                     <div className="max-w-4xl mx-auto bg-indigo-50/50 p-5 rounded-xl border border-indigo-200 text-sm text-gray-800 mt-4 animate-in slide-in-from-bottom-2 shadow-inner">
                                         <div className="leading-relaxed" dangerouslySetInnerHTML={{ __html: formatFeedback(evaluationResults[step].teacherMessage) }} />
                                         
@@ -1024,7 +903,7 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                             </div>
 
                             <div className="p-4 md:p-5 bg-white border-t border-gray-200 shrink-0 flex justify-center shadow-[0_-4px_10px_rgba(0,0,0,0.03)] z-30">
-                                {!evaluatedSteps[step] ? (
+                                {(!evaluatedSteps[step] && !reviewData) ? (
                                     <div className="w-full max-w-xl space-y-2">
                                         <p className="text-xs text-center text-gray-400">빈칸을 비워두면 오답 처리됩니다.</p>
                                         <button onClick={handleEvaluate} disabled={isEvaluating} className="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-md flex items-center justify-center gap-2 disabled:opacity-50">
@@ -1049,16 +928,44 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
         };
 
         const ArchiveDashboard = ({ userInfo, submissions }) => {
-            const timeline = Array.from({ length: 140 }, () => Math.floor(Math.random() * 4));
-            
+            const [reviewSub, setReviewSub] = useState(null);
+
+            if (reviewSub) {
+                return (
+                    <div className="flex flex-col h-full animate-in fade-in duration-300">
+                        <div className="mb-4 shrink-0 px-2 md:px-4 pt-4">
+                             <button onClick={() => setReviewSub(null)} className="flex items-center gap-2 text-gray-500 hover:text-indigo-600 font-bold transition-colors">
+                                 <Icon name="ChevronLeft" size={20}/> 아카이브 목록으로 돌아가기
+                             </button>
+                        </div>
+                        <div className="flex-1 border-[3px] border-indigo-400 rounded-xl overflow-hidden shadow-[0_10px_40px_rgba(79,70,229,0.15)] relative flex flex-col bg-slate-50 m-2 md:m-4">
+                             <div className="bg-indigo-50 text-indigo-700 text-xs font-bold py-2 px-4 z-50 text-center tracking-widest flex items-center justify-center gap-2 shrink-0 border-b border-indigo-100">
+                                 <Icon name="Eye" size={16}/> 복습 모드 (제출된 답안과 피드백을 다시 확인합니다)
+                             </div>
+                             <div className="flex-1 overflow-y-auto p-4 md:p-6">
+                                  <ClozeSystem 
+                                      setActiveMenu={() => setReviewSub(null)} 
+                                      onSubmit={() => setReviewSub(null)} 
+                                      taskConfig={reviewSub.taskConfig} 
+                                      reviewData={reviewSub.reviewData} 
+                                  />
+                             </div>
+                        </div>
+                    </div>
+                );
+            }
+
             const mySubmissions = submissions ? submissions.filter(s => s.studentId === (userInfo ? userInfo.id : null)) : [];
             const myApproved = mySubmissions.filter(s => s.status === 'approved');
             const myPending = mySubmissions.filter(s => s.status === 'pending');
 
-            const totalCount = 142 + myApproved.length;
+            const formatDate = (dateStr) => {
+                const date = new Date(dateStr);
+                return date.toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', hour: '2-digit', minute:'2-digit' });
+            }
 
             return (
-                <div className="space-y-6 animate-in fade-in duration-300">
+                <div className="space-y-6 animate-in fade-in duration-300 p-6 md:p-8">
                     <div className="bg-white p-6 rounded-2xl border shadow-sm">
                         <div className="flex justify-between items-start mb-6">
                             <div>
@@ -1067,39 +974,16 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                             </div>
                         </div>
                         
-                        <div className="grid grid-cols-2 gap-4 max-w-sm mb-8">
+                        <div className="grid grid-cols-2 gap-4 max-w-sm mb-6">
                             <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex flex-col items-center justify-center">
                                 <div className="text-sm text-gray-500 font-medium mb-1">누적 과제 수</div>
-                                <div className="text-3xl font-bold text-blue-600">{totalCount}<span className="text-sm font-normal text-gray-400 ml-1">개</span></div>
+                                <div className="text-3xl font-bold text-blue-600">{myApproved.length}<span className="text-sm font-normal text-gray-400 ml-1">개</span></div>
                             </div>
                             <div className="bg-orange-50/50 p-4 rounded-xl border border-orange-100 flex flex-col items-center justify-center">
-                                <div className="text-sm text-gray-500 font-medium mb-1">연속 출석</div>
-                                <div className="text-3xl font-bold text-orange-500">12<span className="text-sm font-normal text-gray-400 ml-1">일</span></div>
-                            </div>
-                        </div>
-
-                        <div className="mb-6">
-                            <div className="flex justify-between items-center mb-4">
-                                <h4 className="font-bold text-gray-700 flex items-center gap-2">
-                                    <Icon name="Activity" size={18} className="text-gray-400"/> Archived Timeline
-                                </h4>
-                                <span className="text-xs text-gray-400 font-medium px-2 py-1 bg-gray-100 rounded">최근 6개월</span>
-                            </div>
-                            <div className="bg-gray-50 p-4 rounded-xl border overflow-x-auto hide-scrollbar">
-                                <div className="grid grid-rows-5 gap-1.5 min-w-[600px] w-full" style={{ gridAutoFlow: 'column', gridAutoColumns: '12px' }}>
-                                    {timeline.map((level, i) => (
-                                        <div key={i} className={`w-3 h-3 rounded-sm ${level === 0 ? 'bg-gray-200' : level === 1 ? 'bg-blue-300' : level === 2 ? 'bg-blue-500' : 'bg-blue-700'}`} title={`${level}개의 과제 완료`}></div>
-                                    ))}
-                                </div>
-                                <div className="flex justify-end items-center gap-2 mt-3 text-xs text-gray-500 font-medium">
-                                    <span>적음</span>
-                                    <div className="flex gap-1">
-                                        <div className="w-3 h-3 rounded-sm bg-gray-200"></div>
-                                        <div className="w-3 h-3 rounded-sm bg-blue-300"></div>
-                                        <div className="w-3 h-3 rounded-sm bg-blue-500"></div>
-                                        <div className="w-3 h-3 rounded-sm bg-blue-700"></div>
-                                    </div>
-                                    <span>많음</span>
+                                <div className="text-sm text-gray-500 font-medium mb-1">평균 점수</div>
+                                <div className="text-3xl font-bold text-orange-500">
+                                    {myApproved.length > 0 ? Math.round(myApproved.reduce((sum, s) => sum + s.score, 0) / myApproved.length) : 0}
+                                    <span className="text-sm font-normal text-gray-400 ml-1">점</span>
                                 </div>
                             </div>
                         </div>
@@ -1113,16 +997,18 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                             {myApproved.length > 0 ? myApproved.map(sub => (
                                 <div key={sub.id} className="flex justify-between items-center p-4 bg-gray-50 border border-gray-100 rounded-xl hover:bg-gray-100 transition-colors">
                                     <div>
-                                        <div className="text-xs text-gray-400 font-medium mb-1">구분: 빈칸 훈련</div>
+                                        <div className="text-xs text-gray-400 font-medium mb-1">구분: 빈칸 훈련 • 결재일: {formatDate(sub.approvedAt)}</div>
                                         <div className="font-bold text-gray-800 text-sm">{sub.title}</div>
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <span className="text-blue-600 font-bold bg-blue-50 px-3 py-1 rounded-full text-sm border border-blue-100">{sub.score} 점</span>
-                                        <button className="text-sm font-medium text-gray-500 hover:text-gray-800">기록 보기</button>
+                                        <button onClick={() => setReviewSub(sub)} className="text-sm font-bold text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors border border-indigo-100">
+                                            복습하기
+                                        </button>
                                     </div>
                                 </div>
                             )) : (
-                                <div className="text-sm text-gray-500 py-2 px-2">아직 완료되어 결재된 과제가 없습니다.</div>
+                                <div className="text-sm text-gray-500 py-6 text-center bg-gray-50 rounded-xl border border-gray-100">아직 완료되어 결재된 과제가 없습니다.</div>
                             )}
                         </div>
                     </div>
@@ -1138,7 +1024,7 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                                         <div>
                                             <div className="text-xs text-orange-500 font-bold mb-1">상태: 선생님 확인 중...</div>
                                             <div className="font-bold text-gray-800 text-sm">{sub.title}</div>
-                                            <div className="text-xs text-gray-500 mt-1">제출일시: {sub.submittedAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</div>
+                                            <div className="text-xs text-gray-500 mt-1">제출일시: {formatDate(sub.submittedAt)}</div>
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <span className="text-orange-700 font-bold bg-white px-3 py-1 rounded-full text-sm border border-orange-200 shadow-sm">
@@ -1158,7 +1044,8 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
             const pendingSubmissions = submissions ? submissions.filter(s => s.status === 'pending') : [];
             const totalSubmissionsCount = pendingSubmissions.length;
 
-            const timeAgo = (date) => {
+            const timeAgo = (dateStr) => {
+                const date = new Date(dateStr);
                 const minutes = Math.floor((new Date() - date) / 60000);
                 if (minutes < 1) return '방금 전';
                 if (minutes < 60) return `${minutes}분 전`;
@@ -1178,32 +1065,11 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                                 <Icon name="MessageSquare" size={14}/> 피드백 및 채점 필요
                             </div>
                         </div>
-                        <div className="bg-white p-5 rounded-2xl border shadow-sm">
-                            <div className="text-sm font-medium text-gray-500 mb-2">승인 대기 중인 학생</div>
-                            <div className="flex items-end gap-2 mb-3">
-                                <span className="text-4xl font-bold text-blue-600">2</span>
-                                <span className="text-gray-500 font-medium mb-1">명</span>
-                            </div>
-                            <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                                학생 관리 메뉴 이동
-                            </div>
-                        </div>
-                        <div className="bg-white p-5 rounded-2xl border shadow-sm">
-                            <div className="text-sm font-medium text-gray-500 mb-2">오늘 접속한 학생</div>
-                            <div className="flex items-end gap-2 mb-3">
-                                <span className="text-4xl font-bold text-gray-800">42</span>
-                                <span className="text-gray-400 font-medium mb-1">/ 50명</span>
-                            </div>
-                            <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
-                                출석률 84%
-                            </div>
-                        </div>
                     </div>
 
                     <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
                         <div className="p-5 border-b flex justify-between items-center bg-gray-50/50">
                             <h4 className="font-bold text-gray-800">최근 과제 제출 (AI 채점 완료 / 선생님 결재 대기)</h4>
-                            <button className="text-sm text-indigo-600 font-medium hover:underline">모두 보기</button>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
@@ -1250,6 +1116,41 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
             const [aiResult, setAiResult] = useState(null);
             const [parsedData, setParsedData] = useState(null);
             const [errorMsg, setErrorMsg] = useState('');
+            const [customApiKey, setCustomApiKey] = useState('');
+            const [apiModel, setApiModel] = useState('gemini-1.5-flash');
+
+            useEffect(() => {
+                const savedKey = localStorage.getItem('hsktc_api_key');
+                if (savedKey) setCustomApiKey(savedKey);
+                const savedModel = localStorage.getItem('hsktc_api_model');
+                if (savedModel) setApiModel(savedModel);
+            }, []);
+
+            const handleMockGenerate = () => {
+                setErrorMsg('');
+                setAiResult('[테스트 모드] API 통신 없이 임시 샘플 데이터가 로드되었습니다.');
+                const mockObj = {
+                    title: "일사량 조절과 지구 온난화 (샘플)",
+                    summary: "HSK 6급 수준의 환경·과학 지문으로, 태양 복사량 조절을 통한 온난화 해결 방안을 분석합니다.",
+                    tokens: [
+                        { type: "text", value: "阳光或者在上层大气中放置" },
+                        { type: "blank", value: "气溶胶", pinyin: "qìróngjiāo", meaning: "에어로졸", step: 2 },
+                        { type: "text", value: "粒子模拟火山爆发效应等。\n有研究表明：与地表温度的变化问题相比，生活在" },
+                        { type: "blank", value: "近海区域", pinyin: "jìnhǎi qūyù", meaning: "근해 구역", step: 2 },
+                        { type: "text", value: "的人们更关心海平面上升的问题；而那些远离海域的人们则认为，影响农业生产或能源消耗的气温上升率问题更值得" },
+                        { type: "blank", value: "关注", pinyin: "guānzhù", meaning: "관심을 갖다", step: 3 },
+                        { type: "text", value: "。\n" },
+                        { type: "blank", value: "有科学家指出：强制性地阻止海平面升高可能导致气温快速下降", pinyin: "yǒu kēxuéjiā zhǐchū...", meaning: "과학자들은 강제적으로 해수면 상승을 막는 것이 기온 급강하를 초래할 수 있다고 지적한다", step: 4 },
+                        { type: "text", value: "。温度" },
+                        { type: "blank", value: "骤降", pinyin: "zhòujiàng", meaning: "급강하하다", step: 3 },
+                        { type: "text", value: "的危害性可能会超过因碳排放导致全球变暖所带来的危害性，温度下降的速度超过了地球上动植物所能适应的程度，" },
+                        { type: "blank", value: "将是人们需要面对的另一个大问题", pinyin: "jiāng shì rénmen xūyào miànduì de...", meaning: "사람들이 직면해야 할 또 다른 큰 문제가 될 것이다", step: 4 },
+                        { type: "text", value: "。" }
+                    ]
+                };
+                setParsedData(mockObj);
+                setTitle(mockObj.title);
+            };
 
             const handleGenerate = async () => {
                 setErrorMsg('');
@@ -1261,8 +1162,9 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                 setAiResult(null);
                 setParsedData(null);
 
-                const apiKey = ""; 
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                const apiKey = customApiKey || localStorage.getItem('hsktc_api_key') || ""; 
+                const currentModel = apiModel || "gemini-1.5-flash";
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${currentModel}:generateContent?key=${apiKey}`;
                 
                 const promptText = `다음 중국어 원문을 분석하여 HSK ${level} 'Scaffold Cloze' 훈련용 데이터를 JSON 형식으로 생성해줘.
                 [요구사항]
@@ -1310,44 +1212,52 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                 };
 
                 let resultObj = null;
-                try {
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-                    if (!response.ok) throw new Error('API Request Failed');
-                    
-                    const data = await response.json();
-                    const resultText = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] ? data.candidates[0].content.parts[0].text : null;
-                    
-                    if (resultText) {
-                        resultObj = JSON.parse(resultText);
+                let hasApiError = false;
+                const maxRetries = 5;
+                const delays = [1000, 2000, 4000, 8000, 16000];
+
+                for (let i = 0; i <= maxRetries; i++) {
+                    try {
+                        if(!apiKey) throw new Error('API Key is missing');
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        
+                        if (!response.ok) {
+                            const errData = await response.json();
+                            throw new Error(errData.error?.message || 'API Request Failed');
+                        }
+                        
+                        const data = await response.json();
+                        const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                        
+                        if (resultText) {
+                            resultObj = JSON.parse(resultText);
+                            hasApiError = false;
+                            break;
+                        }
+                    } catch (e) {
+                        hasApiError = true;
+                        if (i < maxRetries && e.message !== 'API Key is missing' && !e.message.includes('not found') && !e.message.includes('not supported') && !e.message.includes('quota')) {
+                            await new Promise(r => setTimeout(r, delays[i]));
+                        } else {
+                            if (e.message === 'API Key is missing') {
+                                setErrorMsg("AI 생성 실패: 우측 하단의 '외부 호스팅용 API Key'란에 Gemini API Key를 입력해야 작동합니다.");
+                            } else if (e.message.includes('Quota exceeded') || e.message.includes('429')) {
+                                setErrorMsg(`할당량 초과: 선택하신 모델(${currentModel})의 무료 제공량이 소진되었거나 계정에서 지원되지 않습니다. 'AI 모델 변경'에서 다른 모델을 선택해보세요.`);
+                            } else if (e.message.includes('not found') || e.message.includes('not supported')) {
+                                setErrorMsg(`모델 오류: 현재 API 키에서 ${currentModel} 모델을 지원하지 않습니다. 다른 모델로 변경해보세요.`);
+                            } else {
+                                setErrorMsg(`AI 생성 실패: ${e.message} (입력하신 API 키를 확인해주세요.)`);
+                            }
+                            break; 
+                        }
                     }
-                } catch (e) {
-                    console.error("AI Generation Error:", e);
-                    resultObj = {
-                        title: "일사량 조절과 지구 온난화",
-                        summary: "HSK 6급 수준의 환경·과학 지문으로, 태양 복사량 조절을 통한 온난화 해결 방안과 그에 따른 부작용을 분석합니다.",
-                        tokens: [
-                            { type: "text", value: "阳光或者在上层大气中放置" },
-                            { type: "blank", value: "气溶胶", pinyin: "qìróngjiāo", meaning: "에어로졸", step: 2 },
-                            { type: "text", value: "粒子模拟火山爆发效应等。\n有研究表明：与地表温度的变化问题相比，生活在" },
-                            { type: "blank", value: "近海区域", pinyin: "jìnhǎi qūyù", meaning: "근해 구역", step: 2 },
-                            { type: "text", value: "的人们更关心海平面上升的问题；而那些远离海域的人们则认为，影响农业生产或能源消耗的气温上升率问题更值得" },
-                            { type: "blank", value: "关注", pinyin: "guānzhù", meaning: "관심을 갖다", step: 2 },
-                            { type: "text", value: "。\n" },
-                            { type: "blank", value: "有科学家指出：强制性地阻止海平面升高可能导致气温快速下降", pinyin: "yǒu kēxuéjiā zhǐchū...", meaning: "科学界指出强制阻止海平面升高可能导致气温快速下降", step: 4 },
-                            { type: "text", value: "。温度" },
-                            { type: "blank", value: "骤降", pinyin: "zhòujiàng", meaning: "급강하하다", step: 3 },
-                            { type: "text", value: "的危害性可能会超过因碳排放导致全球变暖所带来的危害性，温度下降的速度超过了地球上动植物所能适应的程度，" },
-                            { type: "blank", value: "将是人们需要面对的另一个大问题", pinyin: "jiāng shì rénmen xūyào miànduì de...", meaning: "사람들이 직면해야 할 또 다른 큰 문제가 될 것이다", step: 4 },
-                            { type: "text", value: "。" }
-                        ]
-                    };
                 }
 
-                if (resultObj) {
+                if (resultObj && !hasApiError) {
                     if (!title) setTitle(resultObj.title);
                     setAiResult(`[AI 분석 완료] 난이도 및 포인트: ${resultObj.summary}`);
                     setParsedData(resultObj);
@@ -1471,8 +1381,37 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                                             value={sourceText} 
                                             onChange={e => {setSourceText(e.target.value); setErrorMsg('');}} 
                                             placeholder="중국어 원문을 여기에 붙여넣으면 AI가 난이도를 분석하고 4단계 빈칸 훈련용 데이터를 분해 및 생성합니다..."
-                                            className="w-full h-40 p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none text-sm font-serif leading-relaxed"
+                                            className="w-full h-32 p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none text-sm font-serif leading-relaxed"
                                         />
+                                    </div>
+                                    <div className="flex gap-4">
+                                        <div className="flex-1">
+                                            <label className="block text-sm font-bold text-gray-700 mb-1 flex justify-between">
+                                                <span>외부 호스팅용 API Key (선택)</span>
+                                            </label>
+                                            <input 
+                                                type="password" 
+                                                value={customApiKey} 
+                                                onChange={e => {setCustomApiKey(e.target.value); localStorage.setItem('hsktc_api_key', e.target.value);}}
+                                                placeholder="Gemini API Key 입력"
+                                                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm tracking-widest"
+                                            />
+                                        </div>
+                                        <div className="w-1/3">
+                                            <label className="block text-sm font-bold text-gray-700 mb-1 flex justify-between">
+                                                <span>AI 모델 변경</span>
+                                            </label>
+                                            <select 
+                                                value={apiModel} 
+                                                onChange={e => {setApiModel(e.target.value); localStorage.setItem('hsktc_api_model', e.target.value);}}
+                                                className="w-full px-2 py-2 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm"
+                                            >
+                                                <option value="gemini-1.5-flash">1.5 Flash</option>
+                                                <option value="gemini-1.5-pro">1.5 Pro</option>
+                                                <option value="gemini-2.0-flash">2.0 Flash</option>
+                                                <option value="gemini-2.0-flash-lite-preview-02-05">2.0 Flash-Lite</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -1489,10 +1428,15 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                                             className="w-full px-4 py-2.5 rounded-lg border border-indigo-200 focus:border-indigo-500 outline-none text-sm font-bold text-gray-800 bg-white"
                                         />
                                     </div>
-                                    <button onClick={handleGenerate} disabled={isGenerating} className="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-colors shadow-md flex items-center justify-center gap-2 shrink-0 disabled:opacity-50">
-                                        {isGenerating ? <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> : <Icon name="Sparkles" size={16}/>}
-                                        {editData && parsedData ? 'AI 콘텐츠 재제작' : 'AI 콘텐츠 자동 제작'}
-                                    </button>
+                                    <div className="flex gap-2">
+                                        <button onClick={handleMockGenerate} className="w-full sm:w-auto px-4 py-2.5 bg-gray-200 text-gray-700 rounded-lg font-bold hover:bg-gray-300 transition-colors shadow-sm flex items-center justify-center gap-2 shrink-0 text-xs">
+                                            샘플로 강제 생성
+                                        </button>
+                                        <button onClick={handleGenerate} disabled={isGenerating} className="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-colors shadow-md flex items-center justify-center gap-2 shrink-0 disabled:opacity-50">
+                                            {isGenerating ? <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> : <Icon name="Sparkles" size={16}/>}
+                                            {editData && parsedData ? 'AI 콘텐츠 재제작' : 'AI 콘텐츠 자동 제작'}
+                                        </button>
+                                    </div>
                                 </div>
                                 {aiResult && (
                                     <div className="mt-4 p-3 bg-white rounded-lg border border-indigo-100 text-sm text-gray-700 leading-relaxed shadow-sm">
@@ -1647,20 +1591,50 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
         };
 
         const StudentManager = () => {
-            const [students, setStudents] = useState([
-                { id: 'STU-075', name: '김유신', email: 'yushin@hsktc.com', level: '6급', status: '활성', joinDate: '2026-03-15', avgScore: 88, completedTasks: 12 },
-                { id: 'STU-088', name: '이순신', email: 'sunshin@hsktc.com', level: '6급', status: '활성', joinDate: '2026-03-20', avgScore: 92, completedTasks: 8 },
-                { id: 'STU-092', name: '강감찬', email: 'gamchan@hsktc.com', level: '5급', status: '대기', joinDate: '2026-04-06', avgScore: 0, completedTasks: 0 },
-                { id: 'STU-095', name: '유관순', email: 'gwansun@hsktc.com', level: '6급', status: '대기', joinDate: '2026-04-06', avgScore: 0, completedTasks: 0 }
-            ]);
+            const [students, setStudents] = useState(() => JSON.parse(localStorage.getItem('hsktc_students')) || []);
+
+            useEffect(() => {
+                localStorage.setItem('hsktc_students', JSON.stringify(students));
+            }, [students]);
+
+            const [isAddingStudent, setIsAddingStudent] = useState(false);
+            const [newStudent, setNewStudent] = useState({ name: '', email: '', level: '6급' });
+            const [errorMsg, setErrorMsg] = useState('');
+            const [deleteTargetId, setDeleteTargetId] = useState(null);
+
+            const handleAddStudent = () => {
+                setErrorMsg('');
+                if (!newStudent.name || !newStudent.email) {
+                    setErrorMsg('이름과 이메일을 모두 입력해주세요.');
+                    return;
+                }
+                const newId = `STU-${Math.floor(Math.random() * 10000).toString().padStart(3, '0')}`;
+                setStudents(prev => [{
+                    id: newId,
+                    name: newStudent.name,
+                    email: newStudent.email,
+                    level: newStudent.level,
+                    status: '대기',
+                    joinDate: new Date().toISOString().split('T')[0],
+                    avgScore: 0,
+                    completedTasks: 0
+                }, ...prev]);
+                setIsAddingStudent(false);
+                setNewStudent({ name: '', email: '', level: '6급' });
+            };
 
             const handleApprove = (id) => {
                 setStudents(prev => prev.map(s => s.id === id ? { ...s, status: '활성' } : s));
             };
 
-            const handleDelete = (id) => {
-                if(confirm('이 학생을 삭제하시겠습니까?')) {
-                    setStudents(prev => prev.filter(s => s.id !== id));
+            const confirmDelete = (id) => {
+                setDeleteTargetId(id);
+            };
+
+            const executeDelete = () => {
+                if(deleteTargetId) {
+                    setStudents(prev => prev.filter(s => s.id !== deleteTargetId));
+                    setDeleteTargetId(null);
                 }
             };
 
@@ -1675,6 +1649,9 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                                 </h4>
                                 <p className="text-xs text-gray-500 mt-1">총 {students.length}명의 학생이 등록되어 있습니다. (대기: {students.filter(s => s.status === '대기').length}명)</p>
                             </div>
+                            <button onClick={() => setIsAddingStudent(true)} className="bg-[#4f46e5] text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-700 shadow-md flex items-center gap-2 transition-all">
+                                <Icon name="Plus" size={18} strokeWidth={3}/> 학생 등록
+                            </button>
                         </div>
 
                         <div className="flex-1 overflow-x-auto p-0">
@@ -1692,7 +1669,7 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                                     </tr>
                                 </thead>
                                 <tbody className="text-sm">
-                                    {students.map(s => (
+                                    {students.length > 0 ? students.map(s => (
                                         <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                                             <td className="p-4 text-center">
                                                 {s.status === '대기' ? (
@@ -1714,17 +1691,77 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                                                             계정 승인
                                                         </button>
                                                     )}
-                                                    <button onClick={() => handleDelete(s.id)} className="p-1.5 text-gray-400 hover:bg-rose-50 hover:text-rose-600 rounded-lg transition-colors">
+                                                    <button onClick={() => confirmDelete(s.id)} className="p-1.5 text-gray-400 hover:bg-rose-50 hover:text-rose-600 rounded-lg transition-colors">
                                                         <Icon name="Trash2" size={18}/>
                                                     </button>
                                                 </div>
                                             </td>
                                         </tr>
-                                    ))}
+                                    )) : (
+                                        <tr>
+                                            <td colSpan="8" className="p-16 text-center text-gray-400">등록된 학생 데이터가 없습니다. 학생을 등록해주세요.</td>
+                                        </tr>
+                                    )}
                                 </tbody>
                             </table>
                         </div>
                     </div>
+
+                    {isAddingStudent && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                            <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-200">
+                                <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-2xl">
+                                    <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
+                                        <Icon name="Users" size={18} className="text-indigo-600" />
+                                        신규 수강생 등록
+                                    </h3>
+                                    <button onClick={() => setIsAddingStudent(false)} className="text-gray-400 hover:text-gray-700 hover:bg-gray-100 p-1.5 rounded-lg transition-colors">
+                                        <Icon name="X" size={20} />
+                                    </button>
+                                </div>
+                                <div className="p-6 space-y-4">
+                                    {errorMsg && <div className="text-rose-500 text-xs font-bold bg-rose-50 p-2.5 rounded-lg border border-rose-100">{errorMsg}</div>}
+                                    <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl text-xs text-indigo-800 font-medium leading-relaxed">
+                                        💡 등록된 학생의 <strong className="text-indigo-700">초기 비밀번호는 'HSK300'</strong>으로 일괄 배정됩니다. 학생에게 이메일 계정과 함께 안내해 주세요.
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">학생 이름</label>
+                                        <input type="text" value={newStudent.name} onChange={e => {setNewStudent({...newStudent, name: e.target.value}); setErrorMsg('');}} className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-indigo-500 outline-none text-sm" placeholder="예: 홍길동" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">이메일 (계정)</label>
+                                        <input type="email" value={newStudent.email} onChange={e => {setNewStudent({...newStudent, email: e.target.value}); setErrorMsg('');}} className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-indigo-500 outline-none text-sm" placeholder="예: student@hsktc.com" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">등록 급수</label>
+                                        <select value={newStudent.level} onChange={e => setNewStudent({...newStudent, level: e.target.value})} className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-indigo-500 outline-none text-sm">
+                                            {['1-2급', '3급', '4급', '5급', '6급', '7-9급'].map(l => <option key={l} value={l}>{l}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 rounded-b-2xl flex justify-end gap-3">
+                                    <button onClick={() => setIsAddingStudent(false)} className="px-5 py-2 rounded-xl font-bold text-gray-600 hover:bg-gray-200 transition-colors text-sm">취소</button>
+                                    <button onClick={handleAddStudent} className="px-6 py-2 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors shadow-md text-sm">등록하기</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {deleteTargetId && (
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
+                            <div className="bg-white max-w-sm w-full rounded-2xl shadow-2xl p-6 text-center animate-in fade-in zoom-in-95 duration-200">
+                                <div className="w-14 h-14 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <Icon name="Trash2" size={28} />
+                                </div>
+                                <h3 className="text-lg font-bold text-gray-800 mb-2">학생 삭제</h3>
+                                <p className="text-gray-500 text-sm mb-6 leading-relaxed">정말 이 학생의 계정 및 데이터를 삭제하시겠습니까?<br/>삭제 후에는 복구할 수 없습니다.</p>
+                                <div className="flex gap-3 justify-center">
+                                    <button onClick={() => setDeleteTargetId(null)} className="px-5 py-2.5 rounded-xl font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors text-sm w-full">취소</button>
+                                    <button onClick={executeDelete} className="px-5 py-2.5 rounded-xl bg-rose-600 text-white font-bold hover:bg-rose-700 transition-colors shadow-md text-sm w-full">삭제하기</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         };
