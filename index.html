@@ -3,19 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HSK 3.0 대비 과제방</title>
+    <title>HSK 빈칸 훈련 & 학생 관리 전문 시스템</title>
     
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     
-    <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     
-    <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <style>
@@ -45,33 +40,27 @@
 <body>
     <div id="root"></div>
 
-    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase Configuration injected by environment
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
         const app = Object.keys(firebaseConfig).length > 0 ? initializeApp(firebaseConfig) : null;
         const auth = app ? getAuth(app) : null;
         const db = app ? getFirestore(app) : null;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'hsk-academy-mock-id';
 
-        window.firebaseServices = { auth, db, appId, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut, collection, doc, setDoc, getDoc, onSnapshot, deleteDoc, updateDoc };
+        window.firebaseServices = { auth, db, appId, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut, collection, doc, setDoc, getDoc, onSnapshot };
     </script>
 
     <script type="text/babel" data-type="module">
         const { useState, useEffect, useRef } = React;
 
-        // --- Icons Component (Inline SVG for Lucide) ---
         const Icon = ({ name, size = 24, className = "", strokeWidth = 2 }) => {
             const icons = {
                 Archive: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="20" height="5" x="2" y="4" rx="1"/><path d="M4 9v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/></svg>,
                 BookOpen: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
-                Headphones: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 14h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7a9 9 0 0 1 18 0v7a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3"/></svg>,
-                PenTool: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>,
-                MessageSquare: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
                 LogOut: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>,
                 CheckCircle: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
                 Lock: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
@@ -86,110 +75,171 @@
                 Trash2: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>,
                 Edit3: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>,
                 ChevronLeft: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m15 18-6-6 6-6"/></svg>,
-                ChevronRight: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m9 18 6-6-6-6"/></svg>,
                 X: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>,
                 Sparkles: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>,
-                Mic: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>,
-                Square: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="18" x="3" y="3" rx="2"/></svg>,
-                Volume2: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+                MessageSquare: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
             };
             return icons[name] || null;
         };
 
-        // --- Main App Component ---
         const App = () => {
             const [user, setUser] = useState(null);
             const [isAuthLoading, setIsAuthLoading] = useState(true);
             const [academyLoggedIn, setAcademyLoggedIn] = useState(false);
-            const [userInfo, setUserInfo] = useState({ name: '', email: '', id: '', isAdmin: false, level: '6급' });
-            const [activeMenu, setActiveMenu] = useState('listening');
+            const [userInfo, setUserInfo] = useState({ name: '', email: '', id: '', isAdmin: false });
+            const [activeMenu, setActiveMenu] = useState('cloze');
 
-            const [submissions, setSubmissions] = useState([]);
-            const [tasks, setTasks] = useState([]);
-            const [usersList, setUsersList] = useState([]);
+            const [submissions, setSubmissions] = useState([
+                { id: 'SUB-001', studentId: 'STU-075', studentName: '김유신', title: '성공하지 못하는 사람 4유형 빈칸', type: 'Scaffold Cloze', score: 85, submittedAt: new Date(Date.now() - 3600000), status: 'pending' },
+                { id: 'SUB-002', studentId: 'STU-088', studentName: '이순신', title: '[모의고사 1] 기후 변화와 일사량', type: 'Scaffold Cloze', score: 92, submittedAt: new Date(Date.now() - 10800000), status: 'pending' }
+            ]);
 
-            useEffect(() => {
-                if (!user) return;
-                const { db, appId, collection, onSnapshot } = window.firebaseServices;
-                if (!db) return;
+            const [tasks, setTasks] = useState([
+                { id: 1, level: '6급', category: '읽기 훈련', title: '성공하지 못하는 사람의 4가지 유형', type: 'Scaffold Cloze', status: '활성', date: '2026-04-05', isLegacy: true },
+                { 
+                    id: 5, level: '6급', category: '읽기 훈련', title: '[모의고사 1] 기후 변화와 일사량', type: 'Scaffold Cloze', status: '활성', date: '2026-04-06', isLegacy: false,
+                    taskData: {
+                        dictionaryList: [
+                            { word: "碳排放", pinyin: "tàn pái fàng", mean: "탄소 배출" },
+                            { word: "应对手段", pinyin: "yìng duì shǒu duàn", mean: "대응 수단" },
+                            { word: "减少抵达地球的太阳能辐射量是阻止全球气候变化最为有效的方法", pinyin: "jiǎn shǎo dǐ dá dì qiú de tài yáng néng fú shè liàng shì zǔ zhǐ quán qiú qì hòu biàn huà zuì wéi yǒu xiào de fāng fǎ", mean: "지구에 도달하는 태양 에너지 방사량을 줄이는 것이 전 지구적 기후 변화를 막는 가장 효과적인 방법이다" },
+                            { word: "发生逆转", pinyin: "fā shēng nì zhuǎn", mean: "역전되다" },
+                            { word: "辐射量", pinyin: "fú shè liàng", mean: "방사량" },
+                            { word: "骤降", pinyin: "zhòu jiàng", mean: "급강하하다" },
+                            { word: "气溶胶", pinyin: "qì róng jiāo", mean: "에어로졸" },
+                            { word: "强制性地", pinyin: "qiáng zhì xìng de", mean: "강제적으로" },
+                            { word: "温度下降的速度超过了地球上动植物所能适应的程度", pinyin: "wēn dù xià jiàng de sù dù chāo guò le dì qiú shàng dòng zhí wù suǒ néng shì yìng de chéng dù", mean: "온도 하강 속도가 지구상의 동식물이 적응할 수 있는 정도를 초과하다" }
+                        ],
+                        correctAnswers: {
+                            1: { 1: "碳排放", 2: "应对手段", 3: "减少抵达地球的太阳能辐射量是阻止全球气候变化最为有效的方法", 4: "发生逆转", 5: "辐射量", 6: "骤降", 7: "气溶胶", 8: "强制性地", 9: "温度下降的速度超过了地球上动植物所能适应的程度" },
+                            2: { 1: "碳排放", 2: "辐射量", 3: "骤降", 4: "气溶胶" },
+                            3: { 1: "应对手段", 2: "发生逆转", 3: "强制性地" },
+                            4: { 1: "减少抵达地球的太阳能辐射量是阻止全球气候变化最为有效的方法", 2: "温度下降的速度超过了地球上动植物所能适应的程度" }
+                        },
+                        tokens: [
+                            { type: "text", value: "面对全球变暖现象，人们为了减少" },
+                            { type: "blank", value: "碳排放", pinyin: "tàn pái fàng", meaning: "탄소 배출", step: 2, stepMap: { 1: 1, 2: 1 } },
+                            { type: "text", value: "，提出了节约能源消耗、减少化石能源的使用以及加大可再生能源利用等" },
+                            { type: "blank", value: "应对手段", pinyin: "yìng duì shǒu duàn", meaning: "대응 수단", step: 3, stepMap: { 1: 2, 3: 1 } },
+                            { type: "text", value: "。然而，一些气候科学家认为，" },
+                            { type: "blank", value: "减少抵达地球的太阳能辐射量是阻止全球气候变化最为有效的方法", pinyin: "jiǎn shǎo dǐ dá dì qiú de tài yáng néng fú shè liàng shì zǔ zhǐ quán qiú qì hòu biàn huà zuì wéi yǒu xiào de fāng fǎ", meaning: "지구에 도달하는 태양 에너지 방사량을 줄이는 것이 전 지구적 기후 변화를 막는 가장 효과적인 방법이다", step: 4, stepMap: { 1: 3, 4: 1 } },
+                            { type: "text", value: "。为了阻止海平面上升或让上升趋势" },
+                            { type: "blank", value: "发生逆转", pinyin: "fā shēng nì zhuǎn", meaning: "역전되다", step: 3, stepMap: { 1: 4, 3: 2 } },
+                            { type: "text", value: "，人们需要迅速减少太阳能对地球的" },
+                            { type: "blank", value: "辐射量", pinyin: "fú shè liàng", meaning: "방사량", step: 2, stepMap: { 1: 5, 2: 2 } },
+                            { type: "text", value: "。然而辐射量快速减少将导致地球大气温度" },
+                            { type: "blank", value: "骤降", pinyin: "zhòu jiàng", meaning: "급강하하다", step: 2, stepMap: { 1: 6, 2: 3 } },
+                            { type: "text", value: "，应采取渐变法。目前，控制太阳能辐射的方法包括用卫星遮挡太阳、让地球表面反射更多的太阳光或者在上层大气中放置" },
+                            { type: "blank", value: "气溶胶", pinyin: "qì róng jiāo", meaning: "에어로졸", step: 2, stepMap: { 1: 7, 2: 4 } },
+                            { type: "text", value: "粒子模拟火山爆发效应等。有科学家指出：" },
+                            { type: "blank", value: "强制性地", pinyin: "qiáng zhì xìng de", meaning: "강제적으로", step: 3, stepMap: { 1: 8, 3: 3 } },
+                            { type: "text", value: "阻止海平面升高可能导致气温快速下降。温度骤降的危害性可能会超过因碳排放导致全球变暖所带来的危害性，" },
+                            { type: "blank", value: "温度下降的速度超过了地球上动植物所能适应的程度", pinyin: "wēn dù xià jiàng de sù dù chāo guò le dì qiú shàng dòng zhí wù suǒ néng shì yìng de chéng dù", meaning: "온도 하강 속도가 지구상의 동식물이 적응할 수 있는 정도를 초과하다", step: 4, stepMap: { 1: 9, 4: 2 } },
+                            { type: "text", value: "，将是人们需要面对的另一个大问题。" }
+                        ]
+                    }
+                },
+                { 
+                    id: 6, level: '6급', category: '읽기 훈련', title: '[모의고사 2] 위저의 직업 설계', type: 'Scaffold Cloze', status: '활성', date: '2026-04-06', isLegacy: false,
+                    taskData: {
+                        dictionaryList: [
+                            { word: "首席执行官", pinyin: "shǒu xí zhí xíng guān", mean: "최고 경영자" },
+                            { word: "短板", pinyin: "duǎn bǎn", mean: "단점, 약점" },
+                            { word: "察言观色", pinyin: "chá yán guān sè", mean: "눈치를 보다" },
+                            { word: "扶摇直上", pinyin: "fú yáo zhí shàng", mean: "급격히 상승하다" },
+                            { word: "自己的成功固然有偶然因素", pinyin: "zì jǐ de chéng gōng gù rán yǒu ǒu rán yīn sù", mean: "자신의 성공에는 물론 우연한 요소도 있다" },
+                            { word: "而是要着眼于自己的职业前途", pinyin: "ér shì yào zhuó yǎn yú zì jǐ de zhí yè qián tú", mean: "오히려 자신의 직업적 미래에 착안해야 한다" },
+                            { word: "止步不前", pinyin: "zhǐ bù bù qián", mean: "제자리에 머물다" },
+                            { word: "淘汰", pinyin: "táo tài", mean: "도태되다" }
+                        ],
+                        correctAnswers: {
+                            1: { 1: "首席执行官", 2: "自己的成功固然有偶然因素", 3: "短板", 4: "察言观色", 5: "扶摇直上", 6: "而是要着眼于自己的职业前途", 7: "止步不前", 8: "淘汰" },
+                            2: { 1: "首席执行官", 2: "短板", 3: "淘汰" },
+                            3: { 1: "察言观色", 2: "扶摇直上", 3: "止步不前" },
+                            4: { 1: "自己的成功固然有偶然因素", 2: "而是要着眼于自己的职业前途" }
+                        },
+                        tokens: [
+                            { type: "text", value: "24岁担任万国证券管理总部的副总经理，到37岁成为阿里巴巴的" },
+                            { type: "blank", value: "首席执行官", pinyin: "shǒu xí zhí xíng guān", meaning: "최고 경영자", step: 2, stepMap: { 1: 1, 2: 1 } },
+                            { type: "text", value: "的卫哲，成了比孙振耀、唐骏更值钱的“金领”。这时，他的第一任老板——管金生给他的评价却是：“卫哲不聪明。”对此，卫哲并不否认，同时他也表示：" },
+                            { type: "blank", value: "自己的成功固然有偶然因素", pinyin: "zì jǐ de chéng gōng gù rán yǒu ǒu rán yīn sù", meaning: "자신의 성공에는 물론 우연한 요소도 있다", step: 4, stepMap: { 1: 2, 4: 1 } },
+                            { type: "text", value: "，但更重要的是他在职业规划中不断地拉长自己的“" },
+                            { type: "blank", value: "短板", pinyin: "duǎn bǎn", meaning: "단점, 약점", step: 2, stepMap: { 1: 3, 2: 2 } },
+                            { type: "text", value: "”。1993年，上海外国语大学英语专业毕业的卫哲进入了万国证券，工作是为万国证券翻译年报。工作中的卫哲很虚心，也很勤奋，加上善于" },
+                            { type: "blank", value: "察言观色", pinyin: "chá yán guān sè", meaning: "눈치를 보다", step: 3, stepMap: { 1: 4, 3: 1 } },
+                            { type: "text", value: "，一年之后，卫哲" },
+                            { type: "blank", value: "扶摇直上", pinyin: "fú yáo zhí shàng", meaning: "급격히 상승하다", step: 3, stepMap: { 1: 5, 3: 2 } },
+                            { type: "text", value: "，成了万国证券管理总部的副总经理。要想获得发展，就不能满足于当前的职业能力，" },
+                            { type: "blank", value: "而是要着眼于自己的职业前途", pinyin: "ér shì yào zhuó yǎn yú zì jǐ de zhí yè qián tú", meaning: "오히려 자신의 직업적 미래에 착안해야 한다", step: 4, stepMap: { 1: 6, 4: 2 } },
+                            { type: "text", value: "。如果" },
+                            { type: "blank", value: "止步不前", pinyin: "zhǐ bù bù qián", meaning: "제자리에 머물다", step: 3, stepMap: { 1: 7, 3: 3 } },
+                            { type: "text", value: "，也许现在还有适合你的岗位，但随着科技的发展、机械化的普及，你就会被逐渐" },
+                            { type: "blank", value: "淘汰", pinyin: "táo tài", meaning: "도태되다", step: 2, stepMap: { 1: 8, 2: 3 } },
+                            { type: "text", value: "。所以，要有职业危机意识，结合自己的个性，努力拉长自己的“短板”，才能不断进步。" }
+                        ]
+                    }
+                },
+                { 
+                    id: 7, level: '6급', category: '읽기 훈련', title: '[모의고사 3] 나무늘보의 생존 방식', type: 'Scaffold Cloze', status: '활성', date: '2026-04-06', isLegacy: false,
+                    taskData: {
+                        dictionaryList: [
+                            { word: "栖息", pinyin: "qī xī", mean: "서식하다" },
+                            { word: "它的运动速度比地球上其他任何哺乳动物都要慢", pinyin: "tā de yùn dòng sù dù bǐ dì qiú shàng qí tā rèn hé bǔ rǔ dòng wù dōu yào màn", mean: "그것의 이동 속도는 지구상의 다른 어떤 포유동물보다 느리다" },
+                            { word: "闻名世界", pinyin: "wén míng shì jiè", mean: "세계적으로 유명하다" },
+                            { word: "嗜睡者", pinyin: "shì shuì zhě", mean: "기면증 환자" },
+                            { word: "避免能量的损耗", pinyin: "bì miǎn néng liàng de sǔn hào", mean: "에너지 소모를 피하다" },
+                            { word: "伪装", pinyin: "wěi zhuāng", mean: "위장" },
+                            { word: "并从这个“藻类装”里获取营养", pinyin: "bìng cóng zhè ge “zǎo lèi zhuāng” lǐ huò qǔ yíng yǎng", mean: "그리고 이 '조류 옷'에서 영양분을 얻는다" }
+                        ],
+                        correctAnswers: {
+                            1: { 1: "栖息", 2: "它的运动速度比地球上其他任何哺乳动物都要慢", 3: "闻名世界", 4: "嗜睡者", 5: "避免能量的损耗", 6: "伪装", 7: "并从这个“藻类装”里获取营养" },
+                            2: { 1: "栖息", 2: "嗜睡者", 3: "伪装" },
+                            3: { 1: "闻名世界", 2: "避免能量的损耗" },
+                            4: { 1: "它的运动速度比地球上其他任何哺乳动物都要慢", 2: "并从这个“藻类装”里获取营养" }
+                        },
+                        tokens: [
+                            { type: "text", value: "树懒是" },
+                            { type: "blank", value: "栖息", pinyin: "qī xī", meaning: "서식하다", step: 2, stepMap: { 1: 1, 2: 1 } },
+                            { type: "text", value: "在树上的一种食草动物。" },
+                            { type: "blank", value: "它的运动速度比地球上其他任何哺乳动物都要慢", pinyin: "tā de yùn dòng sù dù bǐ dì qiú shàng qí tā rèn hé bǔ rǔ dòng wù dōu yào màn", meaning: "그것의 이동 속도는 지구상의 다른 어떤 포유동물보다 느리다", step: 4, stepMap: { 1: 2, 4: 1 } },
+                            { type: "text", value: "，并且以“一天的行进距离不超过38米”而" },
+                            { type: "blank", value: "闻名世界", pinyin: "wén míng shì jiè", meaning: "세계적으로 유명하다", step: 3, stepMap: { 1: 3, 3: 1 } },
+                            { type: "text", value: "。1983年，一个研究小组对被捕获的树懒进行了观察研究，发现它们一天要睡16小时，因此将它们称为动物王国里的重度" },
+                            { type: "blank", value: "嗜睡者", pinyin: "shì shuì zhě", meaning: "기면증 환자", step: 2, stepMap: { 1: 4, 2: 2 } },
+                            { type: "text", value: "。要想在这种能量摄入极低的饮食方式下正常生活，树懒只能通过缓慢移动之类的方法来" },
+                            { type: "blank", value: "避免能量的损耗", pinyin: "bì miǎn néng liàng de sǔn hào", meaning: "에너지 소모를 피하다", step: 3, stepMap: { 1: 5, 3: 2 } },
+                            { type: "text", value: "。在树叶稀少的时候，树懒也不需要为食物担心。因为它们的皮毛有淡淡的绿色，能帮助它们躲过捕食者。这种" },
+                            { type: "blank", value: "伪装", pinyin: "wěi zhuāng", meaning: "위장", step: 2, stepMap: { 1: 6, 2: 3 } },
+                            { type: "text", value: "不是色素，而是藻类。自然潮湿的生活环境，让树懒的皮毛中能够形成藻类。树懒可以舔食自己的皮毛，" },
+                            { type: "blank", value: "并从这个“藻类装”里获取营养", pinyin: "bìng cóng zhè ge “zǎo lèi zhuāng” lǐ huò qǔ yíng yǎng", meaning: "그리고 이 '조류 옷'에서 영양분을 얻는다", step: 4, stepMap: { 1: 7, 4: 2 } },
+                            { type: "text", value: "。" }
+                        ]
+                    }
+                }
+            ]);
 
-                // 과제 콘텐츠(Tasks) 데이터베이스 실시간 리스너
-                const tasksRef = collection(db, 'artifacts', appId, 'public', 'data', 'tasks');
-                const unsubTasks = onSnapshot(tasksRef, (snapshot) => {
-                    const fetchedTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    fetchedTasks.sort((a, b) => b.id - a.id); // 최신순 정렬
-                    setTasks(fetchedTasks);
-                }, (error) => console.error("Tasks fetch error:", error));
-
-                // 학생 제출물(Submissions) 데이터베이스 실시간 리스너
-                const subsRef = collection(db, 'artifacts', appId, 'public', 'data', 'submissions');
-                const unsubSubs = onSnapshot(subsRef, (snapshot) => {
-                    const fetchedSubs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    fetchedSubs.sort((a, b) => new Date(b.submittedAt) - new Date(a.submittedAt)); // 최신 제출순 정렬
-                    setSubmissions(fetchedSubs);
-                }, (error) => console.error("Subs fetch error:", error));
-
-                // 학생 목록(Users) 데이터베이스 실시간 리스너
-                const usersRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
-                const unsubUsers = onSnapshot(usersRef, (snapshot) => {
-                    const fetchedUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    setUsersList(fetchedUsers);
-                }, (error) => console.error("Users fetch error:", error));
-
-                return () => { unsubTasks(); unsubSubs(); unsubUsers(); };
-            }, [user]);
-
-            const handleAddSubmission = async (data) => {
-                const { db, appId, doc, setDoc } = window.firebaseServices;
-                if (!db) return;
-                const newId = `SUB-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+            const handleAddSubmission = (data) => {
                 const newSub = {
-                    id: newId,
+                    id: `SUB-${Math.floor(Math.random() * 100000)}`,
                     studentId: userInfo.id,
                     studentName: userInfo.name,
-                    submittedAt: new Date().toISOString(),
+                    submittedAt: new Date(),
                     status: 'pending',
                     ...data
                 };
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'submissions', newId), newSub);
+                setSubmissions(prev => [newSub, ...prev]);
             };
 
-            const handleApproveSubmission = async (id) => {
-                const { db, appId, doc, updateDoc } = window.firebaseServices;
-                if (!db) return;
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'submissions', id), { status: 'approved', approvedAt: new Date().toISOString() });
+            const handleApproveSubmission = (id) => {
+                setSubmissions(prev => prev.map(s => s.id === id ? { ...s, status: 'approved', approvedAt: new Date() } : s));
             };
 
-            const handleSaveNewTask = async (newTaskData) => {
-                const { db, appId, doc, setDoc } = window.firebaseServices;
-                if (!db) return;
-                const newId = newTaskData.id || Date.now().toString();
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', newId.toString()), { ...newTaskData, id: newId.toString() });
-            };
-
-            const handleDeleteTask = async (id) => {
-                const { db, appId, doc, deleteDoc } = window.firebaseServices;
-                if (!db) return;
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', id.toString()));
-            };
-
-            const handleUpdateTaskStatus = async (id, currentStatus) => {
-                const { db, appId, doc, updateDoc } = window.firebaseServices;
-                if (!db) return;
-                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'tasks', id.toString()), { status: currentStatus === '활성' ? '비활성' : '활성' });
-            };
-
-            const handleSaveUser = async (userData) => {
-                const { db, appId, doc, setDoc } = window.firebaseServices;
-                if (!db) return;
-                const newId = userData.id || `STU-${Date.now().toString().slice(-6)}`;
-                await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', newId), { ...userData, id: newId });
-            };
-
-            const handleDeleteUser = async (id) => {
-                const { db, appId, doc, deleteDoc } = window.firebaseServices;
-                if (!db) return;
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', id));
+            const handleSaveNewTask = (newTaskData) => {
+                const newTask = {
+                    id: tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 1,
+                    ...newTaskData
+                };
+                setTasks(prev => [newTask, ...prev]);
             };
 
             useEffect(() => {
@@ -221,31 +271,20 @@
 
             const handleLogin = (email, password) => {
                 if (email === "yijoonho@hsktc.com" && password === "3300") {
-                    setUserInfo({ name: "이준호", email, id: "ADMIN-001", isAdmin: true, level: '관리자' });
+                    setUserInfo({ name: "이준호", email, id: "ADMIN-001", isAdmin: true });
                     setAcademyLoggedIn(true);
                     setActiveMenu('admin');
-                    return true;
-                } else {
-                    const foundUser = usersList.find(u => u.email === email && u.password === password);
-                    if (foundUser) {
-                        setUserInfo({ name: foundUser.name, email: foundUser.email, id: foundUser.id, isAdmin: false, level: foundUser.level || '6급' });
-                        setAcademyLoggedIn(true);
-                        setActiveMenu('listening');
-                        return true;
-                    } else if(password === "HSK300" && email.trim() !== "") {
-                        const name = email.split('@')[0] || "학생"; 
-                        setUserInfo({ name, email, id: `STU-${Math.floor(Math.random()*10000)}`, isAdmin: false, level: '6급' });
-                        setAcademyLoggedIn(true);
-                        setActiveMenu('listening');
-                        return true;
-                    }
+                } else if(password === "HSK300" && email.trim() !== "") {
+                    const name = email.split('@')[0] || "학생"; 
+                    setUserInfo({ name, email, id: `STU-${Math.floor(Math.random()*10000)}`, isAdmin: false });
+                    setAcademyLoggedIn(true);
+                    setActiveMenu('cloze');
                 }
-                return false;
             };
 
             const handleLogout = () => {
                 setAcademyLoggedIn(false);
-                setUserInfo({name: '', email: '', id: '', isAdmin: false, level: '6급'});
+                setUserInfo({name: '', email: '', id: '', isAdmin: false});
             };
 
             if (isAuthLoading) {
@@ -258,12 +297,12 @@
 
             return (
                 <div className="flex h-screen bg-gray-50 overflow-hidden text-gray-800">
-                    <Sidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} handleLogout={handleLogout} userName={userInfo.name} userInfo={userInfo} isAdmin={userInfo.isAdmin} />
+                    <Sidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} handleLogout={handleLogout} userName={userInfo.name} isAdmin={userInfo.isAdmin} />
                     <main className="flex-1 overflow-y-auto p-6 md:p-10">
                         <header className="mb-8 border-b pb-4 flex justify-between items-center">
                             <div>
-                                <h1 className="text-3xl font-bold text-gray-900">HSK 3.0 대비 과제방</h1>
-                                <p className="text-gray-500 mt-1">오늘의 학습 목표를 달성해 보세요.</p>
+                                <h1 className="text-3xl font-bold text-gray-900">HSK 빈칸 훈련 & 학생 관리 전문 시스템</h1>
+                                <p className="text-gray-500 mt-1">HSK 독해 심화 빈칸 훈련 생성 및 학생 학사 관리 시스템입니다.</p>
                             </div>
                             <div className="hidden md:flex items-center space-x-2 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100">
                                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
@@ -272,11 +311,9 @@
                         </header>
                         
                         <div className="bg-white rounded-xl shadow-sm border border-gray-200 min-h-[70vh]">
-                            {activeMenu === 'listening' && !userInfo.isAdmin && <ListeningModule />}
-                            {activeMenu === 'reading' && !userInfo.isAdmin && <ReadingModule setActiveMenu={setActiveMenu} onSubmit={handleAddSubmission} tasks={tasks} submissions={submissions} userInfo={userInfo} />}
-                            {activeMenu === 'writing' && !userInfo.isAdmin && <WritingRoleplayModule studentName={userInfo.name}/>}
+                            {activeMenu === 'cloze' && !userInfo.isAdmin && <ClozeModule setActiveMenu={setActiveMenu} onSubmit={handleAddSubmission} tasks={tasks} submissions={submissions} userInfo={userInfo} />}
                             {activeMenu === 'archive' && !userInfo.isAdmin && <ArchiveDashboard userInfo={userInfo} submissions={submissions} />}
-                            {activeMenu === 'admin' && userInfo.isAdmin && <AdminDashboard submissions={submissions} onApprove={handleApproveSubmission} tasks={tasks} onSaveNewTask={handleSaveNewTask} onDeleteTask={handleDeleteTask} onUpdateTaskStatus={handleUpdateTaskStatus} usersList={usersList} onSaveUser={handleSaveUser} onDeleteUser={handleDeleteUser} />}
+                            {activeMenu === 'admin' && userInfo.isAdmin && <AdminDashboard submissions={submissions} onApprove={handleApproveSubmission} tasks={tasks} setTasks={setTasks} onSaveNewTask={handleSaveNewTask} />}
                         </div>
                     </main>
                 </div>
@@ -289,9 +326,10 @@
             const [error, setError] = useState('');
 
             const handleSubmit = () => {
-                const success = onLogin(email, password);
-                if (!success) {
-                    setError('학원 계정(이메일)과 정확한 비밀번호를 확인해주세요.');
+                if ((email === "yijoonho@hsktc.com" && password === "3300") || (password === "HSK300" && email.trim() !== "")) {
+                    onLogin(email, password);
+                } else {
+                    setError('학원 계정(이메일)과 정확한 비밀번호를 입력해주세요.');
                 }
             };
 
@@ -302,13 +340,13 @@
                             <Icon name="Archive" size={26} className="text-[#3b82f6]" />
                         </div>
                         <h1 className="text-3xl font-bold text-white tracking-tight mb-3">
-                            HSKTC <span className="text-[#3b82f6] font-normal">Archive</span>
+                            HSKTC <span className="text-[#3b82f6] font-normal">Cloze Master</span>
                         </h1>
                         <p className="text-[10px] text-gray-400 tracking-[0.25em] mb-10 font-medium">
-                            HSK TRAINING CENTER ARCHIVE
+                            SCAFFOLD CLOZE & STUDENT MANAGEMENT
                         </p>
                         <p className="text-gray-200 text-[15px] leading-relaxed">
-                            "당신의 모든 학습 기록이<br/>합격의 데이터가 됩니다."
+                            "HSK 3.0 빈칸 훈련 및 학사 관리의 모든 것"
                         </p>
                     </div>
 
@@ -349,7 +387,7 @@
                             <button 
                                 onClick={handleSubmit} 
                                 className="w-full bg-[#2563eb] hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-xl transition-colors shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] flex justify-center items-center text-[15px] mt-3">
-                                아카이브 접속하기
+                                시스템 접속하기
                             </button>
                         </div>
                         
@@ -363,20 +401,18 @@
             );
         };
 
-        const Sidebar = ({ activeMenu, setActiveMenu, handleLogout, userName, userInfo, isAdmin }) => {
+        const Sidebar = ({ activeMenu, setActiveMenu, handleLogout, userName, isAdmin }) => {
             const menuItems = isAdmin ? [
-                { id: 'admin', label: '관리자 대시보드', icon: 'ShieldAlert' }
+                { id: 'admin', label: '관리자 대시보드', icon: 'LayoutDashboard' }
             ] : [
-                { id: 'listening', label: '듣기 훈련', icon: 'Headphones' },
-                { id: 'reading', label: '읽기 훈련', icon: 'BookOpen' },
-                { id: 'writing', label: 'Layered Writing & Role-play', icon: 'MessageSquare' },
+                { id: 'cloze', label: '빈칸 훈련 (Scaffold Cloze)', icon: 'BookOpen' },
                 { id: 'archive', label: '학습 기록 (Archive)', icon: 'Archive' }
             ];
 
             return (
                 <div className="w-[280px] bg-white border-r border-gray-100 flex flex-col hidden md:flex z-10 shadow-[4px_0_24px_rgba(0,0,0,0.02)] relative font-sans">
                     <div className="p-7 pb-4">
-                        <h2 className="text-[13px] font-extrabold text-gray-400 tracking-widest mb-6">과제 메뉴</h2>
+                        <h2 className="text-[13px] font-extrabold text-gray-400 tracking-widest mb-6">메인 메뉴</h2>
                         
                         <div className="bg-gray-50 rounded-[1.25rem] p-5 mb-4 border border-gray-100/80 shadow-sm transition-all hover:shadow-md">
                             <div className="flex items-center gap-4">
@@ -385,7 +421,7 @@
                                 </div>
                                 <div className="flex flex-col">
                                     <div className="text-gray-800 font-extrabold text-[15px]">성명: {userName}</div>
-                                    {!isAdmin && <div className="text-indigo-600 font-bold text-[11px] mt-1 bg-indigo-100/80 px-2.5 py-1 rounded-md inline-block text-center tracking-wide">레벨: {userInfo?.level || 'HSK 6급'}</div>}
+                                    {!isAdmin && <div className="text-indigo-600 font-bold text-[11px] mt-1 bg-indigo-100/80 px-2.5 py-1 rounded-md inline-block text-center tracking-wide">학생 계정</div>}
                                     {isAdmin && <div className="text-rose-600 font-bold text-[11px] mt-1 bg-rose-100/80 px-2.5 py-1 rounded-md inline-block text-center tracking-wide">관리자 계정</div>}
                                 </div>
                             </div>
@@ -415,206 +451,63 @@
             );
         };
 
-        const ListeningModule = () => {
-            const [activeSubTab, setActiveSubTab] = useState('shadowing');
-
-            return (
-                <div className="flex flex-col h-full">
-                    <div className="flex border-b border-gray-100 bg-gray-50 rounded-t-xl px-4 pt-4 gap-2 overflow-x-auto hide-scrollbar">
-                        <button onClick={() => setActiveSubTab('shadowing')} className={`shrink-0 px-6 py-3 font-bold text-sm rounded-t-xl transition-colors ${activeSubTab === 'shadowing' ? 'bg-white border-t border-x border-gray-200 text-indigo-600 shadow-[0_2px_0_0_white]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 border-transparent'}`}>
-                            1. 섀도잉
-                        </button>
-                        <button onClick={() => setActiveSubTab('echoing')} className={`shrink-0 px-6 py-3 font-bold text-sm rounded-t-xl transition-colors ${activeSubTab === 'echoing' ? 'bg-white border-t border-x border-gray-200 text-indigo-600 shadow-[0_2px_0_0_white]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 border-transparent'}`}>
-                            2. 에코잉 (듣고 말하기)
-                        </button>
-                        <button onClick={() => setActiveSubTab('dictation')} className={`shrink-0 px-6 py-3 font-bold text-sm rounded-t-xl transition-colors ${activeSubTab === 'dictation' ? 'bg-white border-t border-x border-gray-200 text-indigo-600 shadow-[0_2px_0_0_white]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 border-transparent'}`}>
-                            3. 받아쓰기
-                        </button>
-                    </div>
-                    
-                    <div className="p-6 md:p-8 flex-1">
-                        {activeSubTab === 'shadowing' && (
-                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                <div className="flex items-center gap-3 border-b pb-4">
-                                    <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
-                                        <Icon name="Headphones" size={24} />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xl font-extrabold text-gray-800">음성 섀도잉 훈련</h3>
-                                        <p className="text-sm text-gray-500 font-medium mt-1">원어민의 발음과 똑같은 속도로 따라 말하기</p>
-                                    </div>
-                                </div>
-                                <div className="bg-indigo-50/50 p-6 rounded-2xl flex items-center justify-between border border-indigo-100 shadow-sm">
-                                    <div className="flex items-center gap-5">
-                                        <button className="w-14 h-14 bg-indigo-600 text-white rounded-full flex items-center justify-center hover:bg-indigo-700 transition-all shadow-md hover:scale-105">
-                                            <Icon name="PlayCircle" size={28} />
-                                        </button>
-                                        <div>
-                                            <div className="font-extrabold text-gray-800 text-lg">Track 01. 비즈니스 미팅 상황</div>
-                                            <div className="text-sm text-indigo-500 font-semibold mt-0.5">00:00 / 02:30</div>
-                                        </div>
-                                    </div>
-                                    <div className="hidden sm:block w-48 h-2.5 bg-gray-200 rounded-full overflow-hidden shadow-inner">
-                                        <div className="w-1/3 h-full bg-indigo-500 rounded-full"></div>
-                                    </div>
-                                </div>
-                                <div className="bg-white border-2 border-dashed border-gray-200 p-8 rounded-2xl text-center space-y-4 hover:border-indigo-300 transition-colors">
-                                    <button className="bg-white border border-gray-200 px-8 py-3.5 rounded-xl font-bold text-gray-700 hover:bg-gray-50 shadow-sm flex items-center gap-2 mx-auto transition-all">
-                                        <Icon name="Headphones" size={20}/>
-                                        내 음성 녹음 시작
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                        {activeSubTab === 'echoing' && (
-                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                <div className="flex items-center gap-3 border-b pb-4">
-                                    <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
-                                        <Icon name="MessageSquare" size={24} />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xl font-extrabold text-gray-800">음성 에코잉 훈련</h3>
-                                        <p className="text-sm text-gray-500 font-medium mt-1">문장을 듣고 난 뒤에 기억하여 그대로 말하기</p>
-                                    </div>
-                                </div>
-                                <div className="bg-blue-50/50 p-8 rounded-2xl flex flex-col items-center justify-center border border-blue-100 gap-4 shadow-sm relative overflow-hidden">
-                                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-300 to-indigo-500"></div>
-                                    <div className="w-16 h-16 bg-white border border-blue-100 text-blue-600 rounded-full flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all shadow-md cursor-pointer hover:scale-105">
-                                        <Icon name="PlayCircle" size={32} />
-                                    </div>
-                                    <div className="text-center">
-                                        <div className="font-extrabold text-gray-800 text-lg mb-1">Track 02. 일상 대화문 (문장 단위)</div>
-                                        <div className="text-sm text-gray-500 font-medium">원어민의 문장이 끝난 후, 기억하여 정확하게 따라해 보세요.</div>
-                                    </div>
-                                </div>
-                                <div className="bg-white border-2 border-dashed border-gray-200 p-8 rounded-2xl text-center space-y-4 hover:border-rose-300 transition-colors group">
-                                    <div className="w-14 h-14 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-2 cursor-pointer shadow-sm border border-rose-100 group-hover:bg-rose-500 group-hover:text-white transition-all">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" x2="12" y1="19" y2="22"/></svg>
-                                    </div>
-                                    <button className="font-bold text-gray-700 text-lg">
-                                        여기를 눌러 에코잉 녹음 시작
-                                    </button>
-                                    <p className="text-xs text-gray-400 font-medium">녹음을 위해 마이크 권한 허용이 필요합니다.</p>
-                                </div>
-                            </div>
-                        )}
-                        {activeSubTab === 'dictation' && (
-                            <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                <div className="flex items-center gap-3 border-b pb-4">
-                                    <div className="p-2 bg-orange-100 text-orange-600 rounded-lg">
-                                        <Icon name="PenTool" size={24} />
-                                    </div>
-                                    <div>
-                                        <h3 className="text-xl font-extrabold text-gray-800">구문 받아쓰기</h3>
-                                        <p className="text-sm text-gray-500 font-medium mt-1">들은 문장을 정확한 중국어로 타이핑하세요</p>
-                                    </div>
-                                </div>
-                                <div className="bg-orange-50/50 p-5 rounded-2xl flex items-center gap-4 text-orange-800 border border-orange-100 shadow-sm">
-                                    <Icon name="PlayCircle" size={32} className="cursor-pointer hover:text-orange-600 transition-colors drop-shadow-sm"/>
-                                    <div>
-                                        <span className="font-extrabold text-lg block">문장 1</span>
-                                        <span className="text-sm text-orange-600/80 font-medium mt-0.5">3번 반복 재생</span>
-                                    </div>
-                                </div>
-                                <div className="relative">
-                                    <textarea className="w-full h-36 p-5 border-2 border-gray-200 rounded-2xl focus:ring-4 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none resize-none font-medium text-lg text-gray-800 transition-all shadow-sm" placeholder="들은 문장을 중국어(병음 또는 한자)로 작성하세요..."></textarea>
-                                    <div className="absolute bottom-4 right-4 text-xs font-bold text-gray-300">병음 입력기 지원</div>
-                                </div>
-                                <div className="flex justify-end">
-                                    <button className="bg-indigo-600 text-white px-8 py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-md hover:shadow-lg hover:-translate-y-0.5">
-                                        제출 및 정답 확인
-                                    </button>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            );
-        };
-
-        // --- 새로 추가/복구된 ReadingModule 컴포넌트 ---
-        const ReadingModule = ({ setActiveMenu, onSubmit, tasks, submissions, userInfo }) => {
+        const ClozeModule = ({ setActiveMenu, onSubmit, tasks, submissions, userInfo }) => {
             const [activeTask, setActiveTask] = useState(null);
 
-            const readingTasks = tasks.filter(t => t.category === '읽기 훈련' && t.status === '활성');
-
-            const getTaskStatus = (taskId) => {
-                const sub = submissions.find(s => s.studentId === userInfo.id && s.title === tasks.find(t => t.id === taskId)?.title);
-                if (!sub) return 'available';
-                return sub.status;
-            };
+            // Filter active Scaffold Cloze tasks
+            const clozeTasks = tasks.filter(t => t.type === 'Scaffold Cloze' && t.status === '활성');
 
             if (activeTask) {
                 return (
-                    <div className="flex flex-col h-full animate-in fade-in duration-300">
-                        <div className="mb-4 shrink-0 px-6 pt-6">
+                    <div className="flex flex-col h-full animate-in fade-in duration-300 p-2 md:p-4">
+                        <div className="mb-4 shrink-0">
                              <button onClick={() => setActiveTask(null)} className="flex items-center gap-2 text-gray-500 hover:text-indigo-600 font-bold transition-colors">
                                  <Icon name="ChevronLeft" size={20}/> 과제 목록으로 돌아가기
                              </button>
                         </div>
-                        <div className="flex-1 overflow-hidden px-6 pb-6">
-                             {activeTask.type === 'Scaffold Cloze' && (
-                                  <ClozeSystem setActiveMenu={setActiveMenu} onSubmit={onSubmit} taskConfig={activeTask} />
-                             )}
-                             {activeTask.type === '시역 훈련' && (
-                                  <SightTranslationSystem setActiveMenu={setActiveMenu} onSubmit={onSubmit} taskConfig={activeTask} />
-                             )}
-                        </div>
+                        <ClozeSystem setActiveMenu={setActiveMenu} onSubmit={(data) => { onSubmit(data); setActiveTask(null); }} taskConfig={activeTask} />
                     </div>
                 );
             }
 
             return (
-                <div className="space-y-6 animate-in fade-in duration-300 h-full flex flex-col p-6 md:p-8">
-                    <div className="flex items-center gap-3 border-b pb-4 shrink-0">
+                <div className="flex flex-col h-full p-6 md:p-8 animate-in fade-in duration-300">
+                    <div className="flex items-center gap-3 border-b pb-4 mb-6">
                         <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
                             <Icon name="BookOpen" size={24} />
                         </div>
                         <div>
-                            <h3 className="text-xl font-extrabold text-gray-800">읽기 훈련 (Reading)</h3>
-                            <p className="text-sm text-gray-500 font-medium mt-1">AI 튜터와 함께하는 구조화된 읽기 및 번역 훈련</p>
+                            <h3 className="text-xl font-extrabold text-gray-800">빈칸 훈련 (Scaffold Cloze)</h3>
+                            <p className="text-sm text-gray-500 font-medium mt-1">배정된 읽기 과제를 선택하여 단계별 빈칸 학습을 진행하세요.</p>
                         </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto pb-6">
-                        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                            {readingTasks.length > 0 ? readingTasks.map(task => {
-                                const status = getTaskStatus(task.id);
-                                return (
-                                    <div key={task.id} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between group">
-                                        <div>
-                                            <div className="flex justify-between items-start mb-3">
-                                                <span className="bg-indigo-50 text-indigo-600 text-xs font-bold px-2.5 py-1 rounded-md border border-indigo-100">
-                                                    {task.type}
-                                                </span>
-                                                {status === 'approved' && <span className="text-green-500 text-xs font-bold flex items-center gap-1"><Icon name="CheckCircle" size={14}/> 완료됨</span>}
-                                                {status === 'pending' && <span className="text-orange-500 text-xs font-bold flex items-center gap-1"><Icon name="Activity" size={14}/> 채점 대기중</span>}
-                                            </div>
-                                            <h4 className="font-bold text-gray-800 text-lg mb-2 group-hover:text-indigo-600 transition-colors">{task.title}</h4>
-                                            <p className="text-sm text-gray-500 line-clamp-2">{task.taskData?.summary || task.summary || 'AI 기반 스마트 읽기 훈련 콘텐츠입니다.'}</p>
-                                        </div>
-                                        <div className="mt-5 pt-4 border-t border-gray-100">
-                                            <button 
-                                                onClick={() => setActiveTask(task)} 
-                                                disabled={status !== 'available'}
-                                                className={`w-full py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all ${
-                                                    status === 'available' 
-                                                    ? 'bg-gray-800 text-white hover:bg-gray-900 shadow-sm' 
-                                                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                                                }`}
-                                            >
-                                                {status === 'available' ? '학습 시작하기' : status === 'pending' ? '제출 완료' : '학습 완료'}
-                                            </button>
-                                        </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {clozeTasks.length > 0 ? clozeTasks.map(task => {
+                            const isSubmitted = submissions.some(s => s.studentId === userInfo.id && s.title === task.title);
+                            return (
+                                <div key={task.id} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col group">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md">{task.level}</span>
+                                        <span className="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-md">{task.type}</span>
                                     </div>
-                                );
-                            }) : (
-                                <div className="col-span-full py-16 text-center text-gray-400 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
-                                    <Icon name="BookOpen" size={48} className="mx-auto mb-4 opacity-20"/>
-                                    <p className="font-medium text-gray-500">현재 배정된 읽기 훈련 과제가 없습니다.</p>
+                                    <h4 className="font-bold text-gray-800 text-[15px] mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">{task.title}</h4>
+                                    <div className="mt-auto pt-4 flex items-center justify-between border-t border-gray-50">
+                                        {isSubmitted ? (
+                                            <span className="text-sm font-bold text-green-500 flex items-center gap-1 w-full justify-center bg-green-50 py-2 rounded-xl">
+                                                <Icon name="CheckCircle" size={16}/> 제출 완료
+                                            </span>
+                                        ) : (
+                                            <button onClick={() => setActiveTask(task)} className="w-full bg-indigo-50 text-indigo-700 py-2 rounded-xl text-sm font-bold hover:bg-indigo-600 hover:text-white transition-colors flex items-center justify-center gap-2">
+                                                <Icon name="PlayCircle" size={16}/> 학습 시작
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
-                            )}
-                        </div>
+                            )
+                        }) : (
+                            <div className="col-span-full text-center py-12 text-gray-500">배정된 빈칸 훈련 과제가 없습니다.</div>
+                        )}
                     </div>
                 </div>
             );
@@ -644,104 +537,6 @@
                     </svg>
                 );
             }
-        };
-
-        const SightTranslationSystem = ({ setActiveMenu, onSubmit, taskConfig }) => {
-            const [phase, setPhase] = useState('review');
-            
-            const isDynamic = taskConfig ? !taskConfig.isLegacy : false;
-            const currentTitle = taskConfig ? taskConfig.title : '시역 훈련 (Sight Translation)';
-            
-            const chunks = isDynamic && taskConfig && taskConfig.taskData && taskConfig.taskData.chunks ? taskConfig.taskData.chunks : [
-                { ko: "연구에 따르면,", cn: "有研究表明：", pinyin: "yǒu yánjiū biǎomíng:" },
-                { ko: "지표면 온도의 변화 문제와 비교할 때,", cn: "与地表温度的变化问题相比，", pinyin: "yǔ dìbiǎo wēndù de biànhuà wèntí xiāng bǐ," },
-                { ko: "근해 구역에 사는 사람들은 해수면 상승 문제에 더 관심을 갖습니다.", cn: "生活在近海区域的人们更关心海平面上升的问题；", pinyin: "shēnghuó zài jìnhǎi qūyù de rénmen gèng guānxīn hǎipíngmiàn shàngshēng de wèntí;" }
-            ];
-
-            const handleStartRecord = () => {
-                setPhase('record');
-            };
-
-            const handleStopRecord = () => {
-                onSubmit({
-                    title: currentTitle,
-                    type: 'reading',
-                    score: 95
-                });
-                setActiveMenu('archive');
-            };
-
-            return (
-                <div className="flex flex-col h-full animate-in fade-in duration-300">
-                    <div className="flex items-center justify-between shrink-0 mb-4">
-                        <h3 className="text-xl font-bold">{currentTitle}</h3>
-                        <span className="bg-indigo-100 text-indigo-700 font-bold px-3 py-1 rounded-full text-sm shadow-sm">
-                            {phase === 'review' ? 'Step 1: 청크 사전 학습' : 'Step 2: 시역 통역 및 녹음'}
-                        </span>
-                    </div>
-
-                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm flex flex-col flex-1 h-[75vh] min-h-[600px] relative">
-                        <div className="p-6 md:p-8 flex-1 overflow-y-auto relative z-10 bg-slate-50">
-                            {phase === 'review' && (
-                                <div className="space-y-4 max-w-4xl mx-auto">
-                                    <div className="bg-indigo-50 border border-indigo-100 p-5 rounded-xl mb-6 text-sm text-indigo-800 font-medium leading-relaxed shadow-sm">
-                                        <Icon name="Volume2" size={20} className="inline mr-2 mb-1"/>
-                                        아래 한국어-중국어 의미 단위(청크)를 매칭하여 미리 학습하세요. 
-                                        <br/>학습이 끝나면 하단의 <strong>[녹음 시작]</strong> 버튼을 눌러주세요. 다음 화면에서는 중국어가 가려지고 한국어만 보이며, 즉시 중국어로 통역하여 말하는 훈련을 진행합니다.
-                                    </div>
-                                    <div className="space-y-3">
-                                        {chunks.map((c, i) => (
-                                            <div key={i} className="flex flex-col md:flex-row bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden hover:border-indigo-300 transition-colors">
-                                                <div className="w-full md:w-1/2 p-5 bg-gray-50/50 border-b md:border-b-0 md:border-r border-gray-100 flex items-center">
-                                                    <span className="font-bold text-gray-700 text-[15px] leading-relaxed">{c.ko}</span>
-                                                </div>
-                                                <div className="w-full md:w-1/2 p-5 flex flex-col justify-center bg-white">
-                                                    <span className="font-serif text-[17px] font-bold text-gray-900 mb-1">{c.cn}</span>
-                                                    <span className="text-indigo-500 font-medium text-[13px] tracking-wide">{c.pinyin}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                            {phase === 'record' && (
-                                <div className="space-y-4 max-w-4xl mx-auto pb-24">
-                                    <div className="bg-rose-50 border border-rose-100 p-5 rounded-xl mb-6 text-sm text-rose-800 font-bold flex items-center justify-between shadow-sm">
-                                        <div className="flex items-center">
-                                            <Icon name="Mic" size={20} className="inline mr-2 text-rose-600 animate-pulse"/>
-                                            녹음이 진행 중입니다. 한국어 의미 단위를 보고 즉시 중국어로 소리내어 번역하세요.
-                                        </div>
-                                        <div className="flex gap-1">
-                                            <div className="w-2.5 h-2.5 bg-rose-500 rounded-full animate-bounce"></div>
-                                            <div className="w-2.5 h-2.5 bg-rose-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
-                                            <div className="w-2.5 h-2.5 bg-rose-500 rounded-full animate-bounce" style={{animationDelay: '0.4s'}}></div>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-3">
-                                        {chunks.map((c, i) => (
-                                            <div key={i} className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 flex items-center min-h-[90px] border-l-4 border-l-indigo-500 hover:bg-indigo-50/30 transition-colors">
-                                                <span className="font-extrabold text-gray-800 text-lg leading-relaxed">{c.ko}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="p-5 bg-white border-t border-gray-200 shrink-0 flex justify-center shadow-[0_-4px_10px_rgba(0,0,0,0.03)] z-30">
-                            {phase === 'review' ? (
-                                <button onClick={handleStartRecord} className="w-full max-w-xl bg-rose-600 text-white py-4 rounded-xl font-bold hover:bg-rose-700 transition-colors shadow-md flex items-center justify-center gap-2 text-lg">
-                                    <Icon name="Mic" size={22}/> 한국어만 보고 중국어 통역 녹음 시작
-                                </button>
-                            ) : (
-                                <button onClick={handleStopRecord} className="w-full max-w-xl bg-gray-800 text-white py-4 rounded-xl font-bold hover:bg-gray-900 transition-colors shadow-md flex items-center justify-center gap-2 text-lg animate-pulse">
-                                    <Icon name="Square" size={22}/> 녹음 완료 및 과제 제출
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            );
         };
 
         const ClozeSystem = ({ setActiveMenu, onSubmit, taskConfig }) => {
@@ -907,17 +702,14 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                         });
                         if (!response.ok) throw new Error('API Request Failed');
                         const data = await response.json();
-                        const textData = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                        const textData = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] ? data.candidates[0].content.parts[0].text : null;
                         if(textData) {
                             resultObj = JSON.parse(textData);
                             break;
                         }
                     } catch (err) {
-                        if (i === maxRetries - 1) {
-                            console.error("Evaluation Error:", err);
-                        } else {
-                            await new Promise(r => setTimeout(r, delays[i]));
-                        }
+                        console.error(err);
+                        await new Promise(r => setTimeout(r, delays[i]));
                     }
                 }
 
@@ -1321,7 +1113,7 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                             {myApproved.length > 0 ? myApproved.map(sub => (
                                 <div key={sub.id} className="flex justify-between items-center p-4 bg-gray-50 border border-gray-100 rounded-xl hover:bg-gray-100 transition-colors">
                                     <div>
-                                        <div className="text-xs text-gray-400 font-medium mb-1">구분: {sub.type === 'reading' ? '읽기' : sub.type === 'listening' ? '듣기' : '쓰기'}</div>
+                                        <div className="text-xs text-gray-400 font-medium mb-1">구분: 빈칸 훈련</div>
                                         <div className="font-bold text-gray-800 text-sm">{sub.title}</div>
                                     </div>
                                     <div className="flex items-center gap-4">
@@ -1332,17 +1124,6 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                             )) : (
                                 <div className="text-sm text-gray-500 py-2 px-2">아직 완료되어 결재된 과제가 없습니다.</div>
                             )}
-
-                            <div className="flex justify-between items-center p-4 bg-gray-50 border border-gray-100 rounded-xl hover:bg-gray-100 transition-colors opacity-60 mt-4">
-                                <div>
-                                    <div className="text-xs text-gray-400 font-medium mb-1">구분: 어휘</div>
-                                    <div className="font-bold text-gray-800 text-sm">HSK 5급 필수 어휘 100선 작문 테스트 (이전 기록)</div>
-                                </div>
-                                <div className="flex items-center gap-4">
-                                    <span className="text-blue-600 font-bold bg-blue-50 px-3 py-1 rounded-full text-sm border border-blue-100">95 점</span>
-                                    <button className="text-sm font-medium text-gray-500 hover:text-gray-800">기록 보기</button>
-                                </div>
-                            </div>
                         </div>
                     </div>
 
@@ -1357,7 +1138,7 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                                         <div>
                                             <div className="text-xs text-orange-500 font-bold mb-1">상태: 선생님 확인 중...</div>
                                             <div className="font-bold text-gray-800 text-sm">{sub.title}</div>
-                                            <div className="text-xs text-gray-500 mt-1">제출일시: {new Date(sub.submittedAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</div>
+                                            <div className="text-xs text-gray-500 mt-1">제출일시: {sub.submittedAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</div>
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <span className="text-orange-700 font-bold bg-white px-3 py-1 rounded-full text-sm border border-orange-200 shadow-sm">
@@ -1377,8 +1158,7 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
             const pendingSubmissions = submissions ? submissions.filter(s => s.status === 'pending') : [];
             const totalSubmissionsCount = pendingSubmissions.length;
 
-            const timeAgo = (dateString) => {
-                const date = new Date(dateString);
+            const timeAgo = (date) => {
                 const minutes = Math.floor((new Date() - date) / 60000);
                 if (minutes < 1) return '방금 전';
                 if (minutes < 60) return `${minutes}분 전`;
@@ -1401,7 +1181,7 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                         <div className="bg-white p-5 rounded-2xl border shadow-sm">
                             <div className="text-sm font-medium text-gray-500 mb-2">승인 대기 중인 학생</div>
                             <div className="flex items-end gap-2 mb-3">
-                                <span className="text-4xl font-bold text-blue-600">3</span>
+                                <span className="text-4xl font-bold text-blue-600">2</span>
                                 <span className="text-gray-500 font-medium mb-1">명</span>
                             </div>
                             <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
@@ -1464,26 +1244,12 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
 
         const TaskCreationModal = ({ onClose, onSave, editData }) => {
             const [level, setLevel] = useState(editData ? editData.level : '6급');
-            const [category, setCategory] = useState(editData ? editData.category : '읽기 훈련');
-            const [subType, setSubType] = useState(editData ? editData.type : 'Scaffold Cloze');
             const [title, setTitle] = useState(editData ? editData.title : '');
             const [sourceText, setSourceText] = useState(editData ? editData.sourceText : '');
             const [isGenerating, setIsGenerating] = useState(false);
             const [aiResult, setAiResult] = useState(null);
             const [parsedData, setParsedData] = useState(null);
             const [errorMsg, setErrorMsg] = useState('');
-
-            const categories = {
-                '듣기 훈련': ['섀도잉', '에코잉', '받아쓰기'],
-                '읽기 훈련': ['Scaffold Cloze', '시역 훈련'],
-                'Layered Writing & Role-play': ['HSK Layered Writing', 'Role-play']
-            };
-
-            useEffect(() => {
-                if (!editData || category !== editData.category) {
-                    setSubType(categories[category][0]);
-                }
-            }, [category]);
 
             const handleGenerate = async () => {
                 setErrorMsg('');
@@ -1498,78 +1264,42 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                 const apiKey = ""; 
                 const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
                 
-                const isSightTranslation = subType === '시역 훈련';
+                const promptText = `다음 중국어 원문을 분석하여 HSK ${level} 'Scaffold Cloze' 훈련용 데이터를 JSON 형식으로 생성해줘.
+                [요구사항]
+                1. title: 과제 제목 (한국어, 15자 이내)
+                2. summary: 지문 난이도 및 학습 포인트 요약 (한국어, 1~2줄)
+                3. tokens: 원문을 순서대로 배열한 토큰 리스트. (텍스트 토큰과 빈칸 토큰)
+                   - 일반 텍스트는 {"type": "text", "value": "원문텍스트"} (줄바꿈 기호 \n 포함 가능)
+                   - 빈칸(blank)은 {"type": "blank", "value": "정답", "pinyin": "병음", "meaning": "한국어뜻", "step": 스텝번호}
+                4. 빈칸(blank) 할당 규칙 (반드시 총 30개의 빈칸을 생성할 것):
+                   - Step 2 (핵심 단어): 단어 위주로 정확히 10개 선택 (step: 2)
+                   - Step 3 (사자성어/구문): 구문 위주로 정확히 10개 선택 (step: 3)
+                   - Step 4 (문장/절): 의미 단위의 절을 정확히 10개 선택 (step: 4)
+                   * Step 1은 2, 3, 4단계의 모든 빈칸(30개)을 모아 자동으로 워밍업 단계로 구성되므로 별도로 지정할 필요 없음.
                 
-                let promptText = '';
-                let schemaSchema = {};
-
-                if (isSightTranslation) {
-                    promptText = `다음 중국어 원문을 분석하여 HSK ${level} '시역 훈련' 데이터를 JSON 형식으로 생성해줘.
-                    [요구사항]
-                    1. title: 과제 제목 (한국어, 15자 이내)
-                    2. summary: 지문 난이도 및 학습 포인트 요약 (한국어, 1~2줄)
-                    3. chunks: 원문을 의미 단위(청크)로 자른 배열.
-                       - 각 청크는 {"ko": "자연스러운 한국어 번역", "cn": "해당 중국어 청크 원문", "pinyin": "한어병음"} 형태.
-                    
-                    [원문]
-                    ${sourceText}`;
-                    
-                    schemaSchema = {
-                        type: "OBJECT",
-                        properties: {
-                            title: { type: "STRING" },
-                            summary: { type: "STRING" },
-                            chunks: {
-                                type: "ARRAY",
-                                items: {
-                                    type: "OBJECT",
-                                    properties: {
-                                        ko: { type: "STRING" },
-                                        cn: { type: "STRING" },
-                                        pinyin: { type: "STRING" }
-                                    }
+                [원문]
+                ${sourceText}`;
+                
+                const schemaSchema = {
+                    type: "OBJECT",
+                    properties: {
+                        title: { type: "STRING" },
+                        summary: { type: "STRING" },
+                        tokens: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                properties: {
+                                    type: { type: "STRING", description: "'text' or 'blank'" },
+                                    value: { type: "STRING" },
+                                    pinyin: { type: "STRING" },
+                                    meaning: { type: "STRING" },
+                                    step: { type: "INTEGER" }
                                 }
                             }
                         }
-                    };
-                } else {
-                    promptText = `다음 중국어 원문을 분석하여 HSK ${level} 'Scaffold Cloze' 훈련용 데이터를 JSON 형식으로 생성해줘.
-                    [요구사항]
-                    1. title: 과제 제목 (한국어, 15자 이내)
-                    2. summary: 지문 난이도 및 학습 포인트 요약 (한국어, 1~2줄)
-                    3. tokens: 원문을 순서대로 배열한 토큰 리스트. (텍스트 토큰과 빈칸 토큰)
-                       - 일반 텍스트는 {"type": "text", "value": "원문텍스트"} (줄바꿈 기호 \n 포함 가능)
-                       - 빈칸(blank)은 {"type": "blank", "value": "정답", "pinyin": "병음", "meaning": "한국어뜻", "step": 스텝번호}
-                    4. 빈칸(blank) 할당 규칙 (반드시 총 30개의 빈칸을 생성할 것):
-                       - Step 2 (핵심 단어): 단어 위주로 정확히 10개 선택 (step: 2)
-                       - Step 3 (사자성어/구문): 구문 위주로 정확히 10개 선택 (step: 3)
-                       - Step 4 (문장/절): 의미 단위의 절을 정확히 10개 선택 (step: 4)
-                       * Step 1은 2, 3, 4단계의 모든 빈칸(30개)을 모아 자동으로 워밍업 단계로 구성되므로 별도로 지정할 필요 없음.
-                    
-                    [원문]
-                    ${sourceText}`;
-                    
-                    schemaSchema = {
-                        type: "OBJECT",
-                        properties: {
-                            title: { type: "STRING" },
-                            summary: { type: "STRING" },
-                            tokens: {
-                                type: "ARRAY",
-                                items: {
-                                    type: "OBJECT",
-                                    properties: {
-                                        type: { type: "STRING", description: "'text' or 'blank'" },
-                                        value: { type: "STRING" },
-                                        pinyin: { type: "STRING" },
-                                        meaning: { type: "STRING" },
-                                        step: { type: "INTEGER" }
-                                    }
-                                }
-                            }
-                        }
-                    };
-                }
+                    }
+                };
 
                 const payload = {
                     contents: [{ parts: [{ text: promptText }] }],
@@ -1580,68 +1310,46 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                 };
 
                 let resultObj = null;
-                const maxRetries = 5;
-                const delays = [1000, 2000, 4000, 8000, 16000];
-
-                for (let i = 0; i < maxRetries; i++) {
-                    try {
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        if (!response.ok) throw new Error('API Request Failed');
-                        
-                        const data = await response.json();
-                        const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                        
-                        if (resultText) {
-                            resultObj = JSON.parse(resultText);
-                        }
-                        break;
-                    } catch (e) {
-                        if (i === maxRetries - 1) {
-                            console.error("AI Generation Error:", e);
-                            if (isSightTranslation) {
-                                resultObj = {
-                                    title: "지구 온난화와 기후 공학",
-                                    summary: "기후 변화에 대한 전문가들의 다양한 의견을 분석하는 고급 시역 훈련입니다.",
-                                    chunks: [
-                                        { ko: "연구에 따르면,", cn: "有研究表明：", pinyin: "yǒu yánjiū biǎomíng:" },
-                                        { ko: "지표면 온도의 변화 문제와 비교할 때,", cn: "与地表温度的变化问题相比，", pinyin: "yǔ dìbiǎo wēndù de biànhuà wèntí xiāng bǐ," },
-                                        { ko: "근해 구역에 사는 사람들은 해수면 상승 문제에 더 관심을 갖습니다.", cn: "生活在近海区域的人们更关心海平面上升的问题；", pinyin: "shēnghuó zài jìnhǎi qūyù de rénmen gèng guānxīn hǎipíngmiàn shàngshēng de wèntí;" }
-                                    ]
-                                };
-                            } else {
-                                resultObj = {
-                                    title: "일사량 조절과 지구 온난화",
-                                    summary: "HSK 6급 수준의 환경·과학 지문으로, 태양 복사량 조절을 통한 온난화 해결 방안과 그에 따른 부작용을 분석합니다.",
-                                    tokens: [
-                                        { type: "text", value: "阳光或者在上层大气中放置" },
-                                        { type: "blank", value: "气溶胶", pinyin: "qìróngjiāo", meaning: "에어로졸", step: 2 },
-                                        { type: "text", value: "粒子模拟火山爆发效应等。\n有研究表明：与地表温度的变化问题相比，生活在" },
-                                        { type: "blank", value: "近海区域", pinyin: "jìnhǎi qūyù", meaning: "근해 구역", step: 2 },
-                                        { type: "text", value: "的人们更关心海平面上升的问题；而那些远离海域的人们则认为，影响农业生产或能源消耗的气温上升率问题更值得" },
-                                        { type: "blank", value: "关注", pinyin: "guānzhù", meaning: "관심을 갖다", step: 2 },
-                                        { type: "text", value: "。\n" },
-                                        { type: "blank", value: "有科学家指出：强制性地阻止海平面升高可能导致气温快速下降", pinyin: "yǒu kēxuéjiā zhǐchū...", meaning: "과학자들은 강제적으로 해수면 상승을 막는 것이 기온 급강하를 초래할 수 있다고 지적한다", step: 4 },
-                                        { type: "text", value: "。温度" },
-                                        { type: "blank", value: "骤降", pinyin: "zhòujiàng", meaning: "급강하하다", step: 3 },
-                                        { type: "text", value: "的危害性可能会超过因碳排放导致全球变暖所带来的危害性，温度下降的速度超过了地球上动植物所能适应的程度，" },
-                                        { type: "blank", value: "将是人们需要面对的另一个大问题", pinyin: "jiāng shì rénmen xūyào miànduì de...", meaning: "사람들이 직면해야 할 또 다른 큰 문제가 될 것이다", step: 4 },
-                                        { type: "text", value: "。" }
-                                    ]
-                                };
-                            }
-                        } else {
-                            await new Promise(r => setTimeout(r, delays[i]));
-                        }
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error('API Request Failed');
+                    
+                    const data = await response.json();
+                    const resultText = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] ? data.candidates[0].content.parts[0].text : null;
+                    
+                    if (resultText) {
+                        resultObj = JSON.parse(resultText);
                     }
+                } catch (e) {
+                    console.error("AI Generation Error:", e);
+                    resultObj = {
+                        title: "일사량 조절과 지구 온난화",
+                        summary: "HSK 6급 수준의 환경·과학 지문으로, 태양 복사량 조절을 통한 온난화 해결 방안과 그에 따른 부작용을 분석합니다.",
+                        tokens: [
+                            { type: "text", value: "阳光或者在上层大气中放置" },
+                            { type: "blank", value: "气溶胶", pinyin: "qìróngjiāo", meaning: "에어로졸", step: 2 },
+                            { type: "text", value: "粒子模拟火山爆发效应等。\n有研究表明：与地表温度的变化问题相比，生活在" },
+                            { type: "blank", value: "近海区域", pinyin: "jìnhǎi qūyù", meaning: "근해 구역", step: 2 },
+                            { type: "text", value: "的人们更关心海平面上升的问题；而那些远离海域的人们则认为，影响农业生产或能源消耗的气温上升率问题更值得" },
+                            { type: "blank", value: "关注", pinyin: "guānzhù", meaning: "관심을 갖다", step: 2 },
+                            { type: "text", value: "。\n" },
+                            { type: "blank", value: "有科学家指出：强制性地阻止海平面升高可能导致气温快速下降", pinyin: "yǒu kēxuéjiā zhǐchū...", meaning: "科学界指出强制阻止海平面升高可能导致气温快速下降", step: 4 },
+                            { type: "text", value: "。温度" },
+                            { type: "blank", value: "骤降", pinyin: "zhòujiàng", meaning: "급강하하다", step: 3 },
+                            { type: "text", value: "的危害性可能会超过因碳排放导致全球变暖所带来的危害性，温度下降的速度超过了地球上动植物所能适应的程度，" },
+                            { type: "blank", value: "将是人们需要面对的另一个大问题", pinyin: "jiāng shì rénmen xūyào miànduì de...", meaning: "사람들이 직면해야 할 또 다른 큰 문제가 될 것이다", step: 4 },
+                            { type: "text", value: "。" }
+                        ]
+                    };
                 }
 
                 if (resultObj) {
-                    if (!title) setTitle(resultObj.title || '새로운 과제');
-                    setAiResult(`[AI 분석 완료] 난이도 및 포인트: ${resultObj.summary || '분석이 완료되었습니다. (요약 생략됨)'}`);
+                    if (!title) setTitle(resultObj.title);
+                    setAiResult(`[AI 분석 완료] 난이도 및 포인트: ${resultObj.summary}`);
                     setParsedData(resultObj);
                 }
                 
@@ -1656,14 +1364,14 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                 }
                 
                 const hasValidData = parsedData || (editData && editData.taskData) || (editData && editData.isLegacy);
-                if ((subType === 'Scaffold Cloze' || subType === '시역 훈련') && !hasValidData) {
+                if (!hasValidData) {
                     setErrorMsg('먼저 AI 콘텐츠 자동 제작 버튼을 눌러 데이터를 생성해 주세요.');
                     return;
                 }
 
                 let taskData = editData ? editData.taskData : null;
                 
-                if (subType === 'Scaffold Cloze' && parsedData && Array.isArray(parsedData.tokens)) {
+                if (parsedData && Array.isArray(parsedData.tokens)) {
                     let dictList = [];
                     let answers = { 1: {}, 2: {}, 3: {}, 4: {} };
                     let globalIndex = 1;
@@ -1679,24 +1387,22 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
 
                             const currentStepIdx = stepCounts[s]++;
                             const gIdx = globalIndex++;
-                            const wordValue = tok.value || '';
 
                             dictList.push({
-                                word: wordValue,
+                                word: tok.value,
                                 pinyin: tok.pinyin || '',
                                 mean: tok.meaning || ''
                             });
 
-                            answers[1][gIdx] = wordValue;
-                            answers[s][currentStepIdx] = wordValue;
+                            answers[1][gIdx] = tok.value;
+                            answers[s][currentStepIdx] = tok.value;
 
                             return {
                                 ...tok,
-                                value: wordValue,
                                 stepMap: { 1: gIdx, [s]: currentStepIdx }
                             };
                         }
-                        return { ...tok, value: tok.value || '' };
+                        return tok;
                     });
 
                     taskData = {
@@ -1704,22 +1410,14 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                         correctAnswers: answers,
                         tokens: processedTokens
                     };
-                } else if (subType === '시역 훈련' && parsedData && Array.isArray(parsedData.chunks)) {
-                    taskData = {
-                        chunks: parsedData.chunks.map(c => ({
-                            ko: c.ko || '',
-                            cn: c.cn || '',
-                            pinyin: c.pinyin || ''
-                        }))
-                    };
                 }
 
                 onSave({
                     id: editData ? editData.id : undefined,
                     level,
-                    category,
+                    category: '읽기 훈련',
                     title,
-                    type: subType,
+                    type: 'Scaffold Cloze',
                     status: editData ? editData.status : '활성',
                     date: editData ? editData.date : new Date().toISOString().split('T')[0],
                     isLegacy: false,
@@ -1736,7 +1434,7 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-2xl">
                             <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
                                 <div className="p-1.5 bg-indigo-600 text-white rounded-lg"><Icon name={editData ? "Edit3" : "Sparkles"} size={18} /></div>
-                                {editData ? '과제 콘텐츠 편집' : '새 과제 콘텐츠 AI 에디터'}
+                                {editData ? '빈칸 훈련 콘텐츠 편집' : '새 빈칸 훈련 (Scaffold Cloze) 자동 생성'}
                             </h3>
                             <button onClick={onClose} className="text-gray-400 hover:text-gray-700 hover:bg-gray-100 p-1.5 rounded-lg transition-colors">
                                 <Icon name="X" size={20} />
@@ -1758,37 +1456,21 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                                             {['1-2급', '3급', '4급', '5급', '6급', '7-9급'].map(l => <option key={l} value={l}>{l}</option>)}
                                         </select>
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-700 mb-2">훈련 유형</label>
-                                        <div className="flex flex-col gap-2">
-                                            {Object.keys(categories).map(cat => (
-                                                <button key={cat} onClick={() => setCategory(cat)} className={`px-4 py-2.5 rounded-xl text-sm font-bold text-left transition-all ${category === cat ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}>
-                                                    {cat}
-                                                </button>
-                                            ))}
-                                        </div>
+                                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-800 font-medium leading-relaxed">
+                                        <strong className="text-blue-700 block mb-1">Scaffold Cloze 생성 원칙</strong>
+                                        입력하신 원문을 바탕으로 AI가 핵심 어휘(Step 2), 구문 및 사자성어(Step 3), 주요 절(Step 4)을 자동으로 추출하여 총 30개의 빈칸을 설계합니다.
                                     </div>
                                 </div>
                                 <div className="w-full md:w-2/3 space-y-5">
                                     <div>
-                                        <label className="block text-sm font-bold text-gray-700 mb-2">세부 항목 설정</label>
-                                        <div className="flex flex-wrap gap-2">
-                                            {categories[category].map(sub => (
-                                                <button key={sub} onClick={() => setSubType(sub)} className={`px-4 py-2 rounded-full text-xs font-bold transition-all ${subType === sub ? 'bg-gray-800 text-white shadow-md' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
-                                                    {sub}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                    <div>
                                         <label className="block text-sm font-bold text-gray-700 mb-2 flex justify-between">
-                                            <span>소스 자료 입력</span>
+                                            <span>소스 자료 입력 (중국어 원문)</span>
                                             <span className="text-xs font-normal text-indigo-500">원문을 복사해 붙여넣으세요.</span>
                                         </label>
                                         <textarea 
                                             value={sourceText} 
                                             onChange={e => {setSourceText(e.target.value); setErrorMsg('');}} 
-                                            placeholder="중국어 원문을 여기에 붙여넣으면 AI가 난이도를 분석하고 훈련 유형에 맞게 자동으로 콘텐츠 분해 및 생성합니다..."
+                                            placeholder="중국어 원문을 여기에 붙여넣으면 AI가 난이도를 분석하고 4단계 빈칸 훈련용 데이터를 분해 및 생성합니다..."
                                             className="w-full h-40 p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none text-sm font-serif leading-relaxed"
                                         />
                                     </div>
@@ -1832,82 +1514,60 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
             );
         };
 
-        const AdminTaskManager = ({ onPreview, tasks, onSaveNewTask, onDeleteTask, onUpdateTaskStatus }) => {
+        const AdminTaskManager = ({ onPreview, tasks, setTasks, onSaveNewTask }) => {
             const [level, setLevel] = useState('6급');
-            const [category, setCategory] = useState('읽기 훈련');
             const [isAddingTask, setIsAddingTask] = useState(false);
             const [editingTask, setEditingTask] = useState(null);
-            const [confirmingDelete, setConfirmingDelete] = useState(null);
 
-            const filteredTasks = tasks.filter(t => t.level === level && t.category === category);
+            const filteredTasks = tasks.filter(t => t.level === level && t.type === 'Scaffold Cloze');
 
-            const handleToggleStatus = (id, currentStatus) => {
-                onUpdateTaskStatus(id, currentStatus);
+            const handleToggleStatus = (id) => {
+                setTasks(tasks.map(t => {
+                    if (t.id === id) {
+                        return { ...t, status: t.status === '활성' ? '비활성' : '활성' };
+                    }
+                    return t;
+                }));
             };
 
             const handleDelete = (id) => {
-                setConfirmingDelete(id);
-            };
-
-            const confirmDelete = (id) => {
-                onDeleteTask(id);
-                setConfirmingDelete(null);
+                setTasks(tasks.filter(t => t.id !== id));
             };
 
             const handleSaveEditedTask = (updatedTaskData) => {
-                onSaveNewTask(updatedTaskData);
+                setTasks(tasks.map(t => t.id === updatedTaskData.id ? updatedTaskData : t));
                 setEditingTask(null);
             };
 
             const levels = ['1-2급', '3급', '4급', '5급', '6급', '7-9급'];
-            const categories = ['듣기 훈련', '읽기 훈련', 'Layered Writing & Role-play'];
 
             return (
                 <>
-                <div className="flex flex-col xl:flex-row gap-6 animate-in fade-in h-full">
-                    <div className="w-full xl:w-72 shrink-0 space-y-6 flex flex-col">
-                        <div className="bg-white p-6 rounded-2xl border shadow-sm">
-                             <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><Icon name="Archive" size={18}/> HSK 급수 선택</h3>
-                             <div className="flex flex-wrap gap-2">
-                                 {levels.map(l => (
-                                     <button key={l} onClick={() => setLevel(l)} 
-                                        className={`px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex-grow text-center ${
-                                            level === l 
-                                            ? 'bg-indigo-600 text-white shadow-md' 
-                                            : 'bg-gray-50 text-gray-500 hover:bg-gray-100 border border-gray-200'
-                                        }`}>
-                                        {l}
-                                     </button>
-                                 ))}
-                             </div>
-                        </div>
-
-                        <div className="bg-white p-6 rounded-2xl border shadow-sm flex-1">
-                             <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2"><Icon name="FileText" size={18}/> 과제 카테고리 (영역)</h3>
-                             <div className="flex flex-col gap-2">
-                                 {categories.map(c => (
-                                     <button key={c} onClick={() => setCategory(c)} 
-                                        className={`px-5 py-3.5 rounded-xl text-[13px] font-bold text-left transition-all flex items-center justify-between ${
-                                            category === c 
-                                            ? 'bg-blue-50 text-blue-700 border-2 border-blue-200 shadow-sm' 
-                                            : 'bg-white text-gray-600 border-2 border-transparent hover:bg-gray-50'
-                                        }`}>
-                                        {c}
-                                        {category === c && <Icon name="CheckCircle" size={16}/>}
-                                     </button>
-                                 ))}
-                             </div>
-                        </div>
+                <div className="flex flex-col gap-6 animate-in fade-in h-full">
+                    <div className="bg-white p-6 rounded-2xl border shadow-sm flex items-center gap-6">
+                         <h3 className="font-bold text-gray-800 flex items-center gap-2 shrink-0"><Icon name="Archive" size={18}/> HSK 급수 필터</h3>
+                         <div className="flex flex-wrap gap-2">
+                             {levels.map(l => (
+                                 <button key={l} onClick={() => setLevel(l)} 
+                                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all text-center ${
+                                        level === l 
+                                        ? 'bg-indigo-600 text-white shadow-sm' 
+                                        : 'bg-gray-50 text-gray-500 hover:bg-gray-100 border border-gray-200'
+                                    }`}>
+                                    {l}
+                                 </button>
+                             ))}
+                         </div>
                     </div>
 
                     <div className="flex-1 bg-white rounded-2xl border shadow-sm overflow-hidden flex flex-col min-h-[500px]">
                         <div className="p-5 md:p-6 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50/50">
                             <div>
-                                <h4 className="font-extrabold text-lg text-gray-800"><span className="text-indigo-600">{level} / {category}</span> 콘텐츠</h4>
+                                <h4 className="font-extrabold text-lg text-gray-800"><span className="text-indigo-600">{level} / 빈칸 훈련(Scaffold Cloze)</span> 콘텐츠</h4>
                                 <p className="text-xs text-gray-500 mt-1">학생들에게 배정될 과제 콘텐츠를 편집하고 연동할 수 있습니다.</p>
                             </div>
                             <button onClick={() => setIsAddingTask(true)} className="bg-[#4f46e5] text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 shadow-md flex items-center gap-2 transition-all">
-                                <Icon name="Plus" size={18} strokeWidth={3}/> 새 과제 추가
+                                <Icon name="Plus" size={18} strokeWidth={3}/> 새 빈칸 훈련 생성
                             </button>
                         </div>
 
@@ -1917,7 +1577,6 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                                     <tr className="bg-gray-50 text-gray-500 text-[11px] uppercase tracking-wider border-b border-gray-200">
                                         <th className="p-4 font-bold w-12 text-center">ID</th>
                                         <th className="p-4 font-bold">과제 제목</th>
-                                        <th className="p-4 font-bold w-36">유형</th>
                                         <th className="p-4 font-bold w-28 text-center">상태</th>
                                         <th className="p-4 font-bold w-32">생성일</th>
                                         <th className="p-4 font-bold w-48 text-center">관리 (편집/미리보기)</th>
@@ -1928,12 +1587,9 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                                         <tr key={t.id} className="border-b border-gray-100 hover:bg-indigo-50/30 transition-colors group">
                                             <td className="p-4 text-center text-gray-400 font-bold">{t.id}</td>
                                             <td className="p-4 font-bold text-gray-800 group-hover:text-indigo-700 transition-colors">{t.title}</td>
-                                            <td className="p-4 text-gray-600 font-medium">
-                                                <span className="bg-gray-100 px-2.5 py-1 rounded-md text-xs">{t.type}</span>
-                                            </td>
                                             <td className="p-4 text-center">
                                                 <button 
-                                                    onClick={() => handleToggleStatus(t.id, t.status)}
+                                                    onClick={() => handleToggleStatus(t.id)}
                                                     className={`px-3 py-1 rounded-full text-[11px] font-bold cursor-pointer transition-all shadow-sm hover:scale-105 active:scale-95 ${
                                                         t.status === '활성' ? 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200' : 'bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200'
                                                     }`}
@@ -1945,36 +1601,24 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                                             <td className="p-4 text-gray-400 text-xs font-medium">{t.date}</td>
                                             <td className="p-4">
                                                 <div className="flex items-center justify-center gap-2">
-                                                    {(t.type === 'Scaffold Cloze' || t.type === '시역 훈련') ? (
-                                                        <button onClick={() => onPreview(t)} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm group-hover:scale-105" title="실제 화면 미리보기 연동">
-                                                            <Icon name="Eye" size={18}/>
-                                                        </button>
-                                                    ) : (
-                                                        <button onClick={() => {}} className="p-2 bg-gray-50 text-gray-400 rounded-lg hover:bg-gray-200 transition-all" title="미리보기 (준비중)">
-                                                            <Icon name="Eye" size={18}/>
-                                                        </button>
-                                                    )}
+                                                    <button onClick={() => onPreview(t)} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm group-hover:scale-105" title="실제 화면 미리보기">
+                                                        <Icon name="Eye" size={18}/>
+                                                    </button>
                                                     <button onClick={() => setEditingTask(t)} className="p-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-indigo-50 hover:text-indigo-600 transition-all shadow-sm hover:scale-105" title="콘텐츠 편집">
                                                         <Icon name="Edit3" size={18}/>
                                                     </button>
-                                                    {confirmingDelete === t.id ? (
-                                                        <button onClick={() => confirmDelete(t.id)} className="p-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-all shadow-sm group-hover:scale-105" title="삭제 확정">
-                                                            <Icon name="CheckCircle" size={18}/>
-                                                        </button>
-                                                    ) : (
-                                                        <button onClick={() => handleDelete(t.id)} className="p-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-rose-50 hover:text-rose-600 transition-all shadow-sm hover:scale-105" title="삭제">
-                                                            <Icon name="Trash2" size={18}/>
-                                                        </button>
-                                                    )}
+                                                    <button onClick={() => handleDelete(t.id)} className="p-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-rose-50 hover:text-rose-600 transition-all shadow-sm hover:scale-105" title="삭제">
+                                                        <Icon name="Trash2" size={18}/>
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
                                     )) : (
                                         <tr>
-                                            <td colSpan="6" className="p-16 text-center text-gray-400">
+                                            <td colSpan="5" className="p-16 text-center text-gray-400">
                                                 <div className="flex flex-col items-center gap-3">
                                                     <Icon name="Archive" size={32} className="opacity-20"/>
-                                                    <p>해당 카테고리에 등록된 과제 콘텐츠가 없습니다.</p>
+                                                    <p>해당 급수에 등록된 빈칸 훈련 콘텐츠가 없습니다.</p>
                                                 </div>
                                             </td>
                                         </tr>
@@ -1985,7 +1629,6 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                     </div>
                 </div>
                 
-                {/* AI 과제 추가 및 편집 모달 마운트 */}
                 {(isAddingTask || editingTask) && (
                     <TaskCreationModal 
                         editData={editingTask}
@@ -2003,172 +1646,90 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
             );
         };
 
-        const StudentCreationModal = ({ onClose, onSave, editData }) => {
-            const [name, setName] = useState(editData ? editData.name : '');
-            const [email, setEmail] = useState(editData ? editData.email : '');
-            const [password, setPassword] = useState(editData ? editData.password : '');
-            const [level, setLevel] = useState(editData ? editData.level : '6급');
-            const [errorMsg, setErrorMsg] = useState('');
+        const StudentManager = () => {
+            const [students, setStudents] = useState([
+                { id: 'STU-075', name: '김유신', email: 'yushin@hsktc.com', level: '6급', status: '활성', joinDate: '2026-03-15', avgScore: 88, completedTasks: 12 },
+                { id: 'STU-088', name: '이순신', email: 'sunshin@hsktc.com', level: '6급', status: '활성', joinDate: '2026-03-20', avgScore: 92, completedTasks: 8 },
+                { id: 'STU-092', name: '강감찬', email: 'gamchan@hsktc.com', level: '5급', status: '대기', joinDate: '2026-04-06', avgScore: 0, completedTasks: 0 },
+                { id: 'STU-095', name: '유관순', email: 'gwansun@hsktc.com', level: '6급', status: '대기', joinDate: '2026-04-06', avgScore: 0, completedTasks: 0 }
+            ]);
 
-            const handleSave = () => {
-                if (!name.trim() || !email.trim() || !password.trim()) {
-                    setErrorMsg('이름, 이메일, 비밀번호를 모두 입력해주세요.');
-                    return;
-                }
-                onSave({
-                    id: editData ? editData.id : null,
-                    name,
-                    email,
-                    password,
-                    level,
-                    createdAt: editData ? editData.createdAt : new Date().toISOString()
-                });
-                onClose();
+            const handleApprove = (id) => {
+                setStudents(prev => prev.map(s => s.id === id ? { ...s, status: '활성' } : s));
             };
-
-            return (
-                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl flex flex-col animate-in fade-in zoom-in-95 duration-200">
-                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-2xl">
-                            <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
-                                <div className="p-1.5 bg-indigo-600 text-white rounded-lg"><Icon name={editData ? "Edit3" : "Users"} size={18} /></div>
-                                {editData ? '학생 정보 수정' : '신규 학생 등록'}
-                            </h3>
-                            <button onClick={onClose} className="text-gray-400 hover:text-gray-700 hover:bg-gray-100 p-1.5 rounded-lg transition-colors">
-                                <Icon name="X" size={20} />
-                            </button>
-                        </div>
-                        
-                        <div className="p-6 space-y-4">
-                            {errorMsg && <div className="bg-rose-50 text-rose-600 p-3 rounded-lg text-sm font-bold">{errorMsg}</div>}
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">학생 이름</label>
-                                <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="홍길동" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">로그인 이메일</label>
-                                <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="student@hsktc.com" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">비밀번호</label>
-                                <input type="text" value={password} onChange={e => setPassword(e.target.value)} placeholder="접속 비밀번호" className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm" />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-1">목표/현재 급수</label>
-                                <select value={level} onChange={e => setLevel(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium">
-                                    {['1-2급', '3급', '4급', '5급', '6급', '7-9급'].map(l => <option key={l} value={l}>{l}</option>)}
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 rounded-b-2xl flex justify-end gap-3">
-                            <button onClick={onClose} className="px-5 py-2.5 rounded-xl font-bold text-gray-600 hover:bg-gray-200 transition-colors text-sm">취소</button>
-                            <button onClick={handleSave} className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors shadow-md text-sm">
-                                {editData ? '수정 내용 저장' : '학생 계정 생성'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        const AdminStudentManager = ({ usersList, onSaveUser, onDeleteUser }) => {
-            const [isAdding, setIsAdding] = useState(false);
-            const [editingUser, setEditingUser] = useState(null);
-            const [confirmingDelete, setConfirmingDelete] = useState(null);
 
             const handleDelete = (id) => {
-                setConfirmingDelete(id);
-            };
-
-            const confirmDeleteUser = (id) => {
-                onDeleteUser(id);
-                setConfirmingDelete(null);
+                if(confirm('이 학생을 삭제하시겠습니까?')) {
+                    setStudents(prev => prev.filter(s => s.id !== id));
+                }
             };
 
             return (
-                <div className="bg-white rounded-2xl border shadow-sm overflow-hidden flex flex-col min-h-[500px] animate-in fade-in">
-                    <div className="p-5 md:p-6 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50/50">
-                        <div>
-                            <h4 className="font-extrabold text-lg text-gray-800">등록된 학생 목록</h4>
-                            <p className="text-xs text-gray-500 mt-1">학생 계정을 생성하고, 급수 및 비밀번호를 관리할 수 있습니다.</p>
+                <div className="flex flex-col h-full animate-in fade-in">
+                    <div className="bg-white rounded-2xl border shadow-sm overflow-hidden flex flex-col h-full">
+                        <div className="p-6 border-b flex justify-between items-center bg-gray-50/50 shrink-0">
+                            <div>
+                                <h4 className="font-extrabold text-lg text-gray-800 flex items-center gap-2">
+                                    <Icon name="Users" size={20} className="text-indigo-600"/>
+                                    수강생 목록 관리
+                                </h4>
+                                <p className="text-xs text-gray-500 mt-1">총 {students.length}명의 학생이 등록되어 있습니다. (대기: {students.filter(s => s.status === '대기').length}명)</p>
+                            </div>
                         </div>
-                        <button onClick={() => setIsAdding(true)} className="bg-[#4f46e5] text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 shadow-md flex items-center gap-2 transition-all">
-                            <Icon name="Plus" size={18} strokeWidth={3}/> 새 학생 추가
-                        </button>
-                    </div>
 
-                    <div className="flex-1 overflow-x-auto p-0">
-                        <table className="w-full text-left border-collapse min-w-[700px]">
-                            <thead>
-                                <tr className="bg-gray-50 text-gray-500 text-[11px] uppercase tracking-wider border-b border-gray-200">
-                                    <th className="p-4 font-bold w-16 text-center">ID</th>
-                                    <th className="p-4 font-bold w-32">이름</th>
-                                    <th className="p-4 font-bold">이메일 계정</th>
-                                    <th className="p-4 font-bold w-32">비밀번호</th>
-                                    <th className="p-4 font-bold w-24 text-center">급수</th>
-                                    <th className="p-4 font-bold w-32 text-center">등록일</th>
-                                    <th className="p-4 font-bold w-32 text-center">관리</th>
-                                </tr>
-                            </thead>
-                            <tbody className="text-sm">
-                                {usersList.length > 0 ? usersList.map(u => (
-                                    <tr key={u.id} className="border-b border-gray-100 hover:bg-indigo-50/30 transition-colors group">
-                                        <td className="p-4 text-center text-gray-400 font-bold text-xs">{u.id}</td>
-                                        <td className="p-4 font-bold text-gray-800 group-hover:text-indigo-700 transition-colors">{u.name}</td>
-                                        <td className="p-4 text-gray-600 font-medium">{u.email}</td>
-                                        <td className="p-4 text-gray-400 font-mono tracking-wider">{u.password}</td>
-                                        <td className="p-4 text-center">
-                                            <span className="bg-blue-50 text-blue-600 border border-blue-200 px-2.5 py-1 rounded-md text-xs font-bold">{u.level}</span>
-                                        </td>
-                                        <td className="p-4 text-gray-400 text-xs font-medium text-center">{new Date(u.createdAt).toLocaleDateString()}</td>
-                                        <td className="p-4 text-center">
-                                            <div className="flex items-center justify-center gap-2">
-                                                <button onClick={() => setEditingUser(u)} className="p-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-indigo-50 hover:text-indigo-600 transition-all shadow-sm hover:scale-105" title="정보 수정">
-                                                    <Icon name="Edit3" size={18}/>
-                                                </button>
-                                                {confirmingDelete === u.id ? (
-                                                    <button onClick={() => confirmDeleteUser(u.id)} className="p-2 bg-rose-500 text-white rounded-lg hover:bg-rose-600 transition-all shadow-sm group-hover:scale-105" title="삭제 확정">
-                                                        <Icon name="CheckCircle" size={18}/>
-                                                    </button>
+                        <div className="flex-1 overflow-x-auto p-0">
+                            <table className="w-full text-left border-collapse min-w-[700px]">
+                                <thead>
+                                    <tr className="bg-gray-50 text-gray-500 text-[11px] uppercase tracking-wider border-b border-gray-200">
+                                        <th className="p-4 font-bold text-center">상태</th>
+                                        <th className="p-4 font-bold">학생 이름</th>
+                                        <th className="p-4 font-bold">이메일 (계정)</th>
+                                        <th className="p-4 font-bold text-center">등록 급수</th>
+                                        <th className="p-4 font-bold text-center">완료한 과제</th>
+                                        <th className="p-4 font-bold text-center">평균 점수</th>
+                                        <th className="p-4 font-bold text-center">가입일</th>
+                                        <th className="p-4 font-bold text-right">관리</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="text-sm">
+                                    {students.map(s => (
+                                        <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                            <td className="p-4 text-center">
+                                                {s.status === '대기' ? (
+                                                    <span className="bg-rose-100 text-rose-600 font-bold px-2.5 py-1 rounded text-xs">승인 대기</span>
                                                 ) : (
-                                                    <button onClick={() => handleDelete(u.id)} className="p-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-rose-50 hover:text-rose-600 transition-all shadow-sm hover:scale-105" title="계정 삭제">
+                                                    <span className="bg-green-100 text-green-600 font-bold px-2.5 py-1 rounded text-xs">활성</span>
+                                                )}
+                                            </td>
+                                            <td className="p-4 font-bold text-gray-800">{s.name} <span className="text-xs text-gray-400 font-normal ml-1">({s.id})</span></td>
+                                            <td className="p-4 text-gray-600">{s.email}</td>
+                                            <td className="p-4 text-center font-bold text-indigo-600">{s.level}</td>
+                                            <td className="p-4 text-center">{s.completedTasks}건</td>
+                                            <td className="p-4 text-center">{s.avgScore > 0 ? `${s.avgScore}점` : '-'}</td>
+                                            <td className="p-4 text-center text-gray-500 text-xs">{s.joinDate}</td>
+                                            <td className="p-4 text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    {s.status === '대기' && (
+                                                        <button onClick={() => handleApprove(s.id)} className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm">
+                                                            계정 승인
+                                                        </button>
+                                                    )}
+                                                    <button onClick={() => handleDelete(s.id)} className="p-1.5 text-gray-400 hover:bg-rose-50 hover:text-rose-600 rounded-lg transition-colors">
                                                         <Icon name="Trash2" size={18}/>
                                                     </button>
-                                                )}
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )) : (
-                                    <tr>
-                                        <td colSpan="7" className="p-16 text-center text-gray-400">
-                                            <div className="flex flex-col items-center gap-3">
-                                                <Icon name="Users" size={32} className="opacity-20"/>
-                                                <p>등록된 학생이 없습니다. 우측 상단 버튼을 눌러 학생을 추가해주세요.</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-
-                    {(isAdding || editingUser) && (
-                        <StudentCreationModal 
-                            editData={editingUser}
-                            onClose={() => { setIsAdding(false); setEditingUser(null); }}
-                            onSave={(userData) => {
-                                onSaveUser(userData);
-                                setIsAdding(false);
-                                setEditingUser(null);
-                            }}
-                        />
-                    )}
                 </div>
             );
         };
 
-        const AdminDashboard = ({ submissions, onApprove, tasks, onSaveNewTask, onDeleteTask, onUpdateTaskStatus, usersList, onSaveUser, onDeleteUser }) => {
+        const AdminDashboard = ({ submissions, onApprove, tasks, setTasks, onSaveNewTask }) => {
             const [activeTab, setActiveTab] = useState('tasks');
             const [previewMode, setPreviewMode] = useState(false);
 
@@ -2185,12 +1746,7 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                                  <Icon name="Eye" size={16}/> 미리보기 모드 (실제 학생에게 보여지는 화면입니다)
                              </div>
                              <div className="flex-1 p-4 md:p-6 overflow-y-auto">
-                                 {previewMode.type === 'Scaffold Cloze' && (
-                                      <ClozeSystem setActiveMenu={() => setPreviewMode(false)} onSubmit={(data) => { setPreviewMode(false); }} taskConfig={previewMode} />
-                                 )}
-                                 {previewMode.type === '시역 훈련' && (
-                                      <SightTranslationSystem setActiveMenu={() => setPreviewMode(false)} onSubmit={(data) => { setPreviewMode(false); }} taskConfig={previewMode} />
-                                 )}
+                                  <ClozeSystem setActiveMenu={() => setPreviewMode(false)} onSubmit={() => { setPreviewMode(false); }} taskConfig={previewMode} />
                              </div>
                         </div>
                     </div>
@@ -2205,7 +1761,7 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
                                 <div className="p-1.5 bg-indigo-600 text-white rounded"><Icon name="ShieldAlert" size={20}/></div>
                                 관리자 대시보드
                             </h2>
-                            <p className="text-gray-500 text-sm">학생들의 과제 제출 현황과 기록을 관리하세요.</p>
+                            <p className="text-gray-500 text-sm">학생 및 과제 관리를 총괄합니다.</p>
                         </div>
                         <div className="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold text-xs rounded-full border border-rose-200">
                             Teacher Mode
@@ -2214,284 +1770,24 @@ ${JSON.stringify(inputs[step] || {}, null, 2)}
 
                     <div className="flex gap-6 border-b border-gray-200 mb-6 shrink-0">
                         <button onClick={() => setActiveTab('summary')} className={`pb-3 border-b-2 px-2 flex items-center gap-2 transition-colors ${activeTab === 'summary' ? 'border-indigo-600 font-bold text-indigo-600' : 'border-transparent font-medium text-gray-500 hover:text-gray-800'}`}>
-                            <Icon name="LayoutDashboard" size={18}/> 요약 현황
+                            <Icon name="LayoutDashboard" size={18}/> 대시보드 요약
                         </button>
                         <button onClick={() => setActiveTab('tasks')} className={`pb-3 border-b-2 px-2 flex items-center gap-2 transition-colors ${activeTab === 'tasks' ? 'border-indigo-600 font-bold text-indigo-600' : 'border-transparent font-medium text-gray-500 hover:text-gray-800'}`}>
-                            <Icon name="FileText" size={18}/> 과제 콘텐츠 관리
+                            <Icon name="FileText" size={18}/> 빈칸 훈련 콘텐츠 관리
                         </button>
                         <button onClick={() => setActiveTab('students')} className={`pb-3 border-b-2 px-2 flex items-center gap-2 transition-colors ${activeTab === 'students' ? 'border-indigo-600 font-bold text-indigo-600' : 'border-transparent font-medium text-gray-500 hover:text-gray-800'}`}>
-                            <Icon name="Users" size={18}/> 학생 관리
+                            <Icon name="Users" size={18}/> 수강생 관리
                         </button>
                     </div>
 
                     <div className="flex-1 overflow-y-auto pb-10 hide-scrollbar">
                         {activeTab === 'summary' && <AdminSummary submissions={submissions} onApprove={onApprove} />}
-                        {activeTab === 'tasks' && <AdminTaskManager onPreview={(t) => setPreviewMode(t)} tasks={tasks} onSaveNewTask={onSaveNewTask} onDeleteTask={onDeleteTask} onUpdateTaskStatus={onUpdateTaskStatus} />}
-                        {activeTab === 'students' && <AdminStudentManager usersList={usersList} onSaveUser={onSaveUser} onDeleteUser={onDeleteUser} />}
+                        {activeTab === 'tasks' && <AdminTaskManager onPreview={(t) => setPreviewMode(t)} tasks={tasks} setTasks={setTasks} onSaveNewTask={onSaveNewTask} />}
+                        {activeTab === 'students' && <StudentManager />}
                     </div>
                 </div>
             )
         };
-
-        const LayeredWritingChat = ({studentName}) => {
-            const [isStarted, setIsStarted] = useState(false);
-            const [messages, setMessages] = useState([]);
-            const [input, setInput] = useState('');
-            const [isGenerating, setIsGenerating] = useState(false);
-
-            const systemInstruction = `
-            너는 중국어 스크립트를 바탕으로 학생들이 논리적이고 깊이 있는 글을 쓰도록 돕는 'Layered Writing' 전문가이자 교육자야.
-
-            [가이드 원칙: Layer 3단계]
-            Layer 1: Core (30%) - 뼈대 구축: 핵심 키워드와 중심 문장을 통해 소스 텍스트의 본질을 포착했는지 확인해. 부족하면 질문을 통해 유도해.
-            Layer 2: Logic (60%) - 연결고리 생성: 세부 맥락과 인과관계를 추가했는지 확인해. 특히 접속사 등을 활용한 문장 간의 논리적 연결성을 중점적으로 분석해.
-            Layer 3: Creative (100%) - 사고의 확장: 자신의 언어로 재구성했는지, 주관적 견해나 응용 사례가 포함되었는지 확인하여 사고의 깊이를 확장해.
-
-            [채점 및 통과 규칙]
-            종합 평가 지표: 각 단계에서 ①내용의 논리성, ②표현의 정확성과 적절성, ③구조적 완성도를 종합하여 100점 만점의 백분율 점수를 산출하여 반드시 학생에게 알려 줘.
-            70%의 벽: 점수가 70% 이상일 때만 "Pass"를 주고 다음 단계로 넘어가. 70% 미만이라면 어떤 지표에서 부족했는지 설명하고 다시 쓰도록 격려해.
-            단계별 진행: 절대 한꺼번에 작성하게 하지 마. 반드시 Layer 1이 통과되어야 Layer 2로 진행할 수 있어.
-
-            [상호작용 스타일]
-            질문 중심: 즉각적인 교정보다는 "어떻게 하면 논리가 더 선명해질까?" 또는 "이 문장들을 잇는 더 적절한 접속사는 무엇일까?"와 같은 질문을 던져.
-            언어 원칙: 모든 설명과 피드백은 한국어로 하되, 중국어 문장에 대한 구체적인 수정 제안이나 예시는 중국어로 제공해.
-            톤앤매너: 친절하고 따뜻하며, 학생의 성장을 진심으로 응원하는 전문 교육자의 톤을 유지해.
-            `;
-
-            const startSession = () => {
-                setIsStarted(true);
-                setMessages([{
-                    role: 'ai',
-                    text: `안녕하세요, ${studentName} 학생! HSKTC Layered Writing 튜터입니다.\n\n오늘은 '성공하지 못하는 사람의 4가지 유형'이라는 주제로 글쓰기를 진행해 볼 거예요.\n\n먼저 **Layer 1: Core (뼈대 구축)** 단계입니다. 핵심 키워드와 중심 문장을 활용하여 본문의 핵심 내용을 중국어로 간단히 작성해 볼까요?`
-                }]);
-            };
-
-            const handleSend = async () => {
-                if(!input.trim() || isGenerating) return;
-
-                const userText = input;
-                setInput('');
-                const newHistory = [...messages, { role: 'user', text: userText }];
-                setMessages(newHistory);
-                setIsGenerating(true);
-
-                const apiKey = ""; 
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
-                const contents = newHistory.map(msg => ({
-                    role: msg.role === 'ai' ? 'model' : 'user',
-                    parts: [{ text: msg.text }]
-                }));
-
-                const payload = {
-                    contents: contents,
-                    systemInstruction: { parts: [{ text: systemInstruction }] }
-                };
-
-                const maxRetries = 5;
-                const delays = [1000, 2000, 4000, 8000, 16000];
-                let aiText = "죄송합니다. 오류가 발생했습니다.";
-
-                for (let i = 0; i < maxRetries; i++) {
-                    try {
-                        const response = await fetch(url, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(payload)
-                        });
-                        if (!response.ok) throw new Error('API Request Failed');
-                        const data = await response.json();
-                        aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "답변을 생성하지 못했습니다.";
-                        break;
-                    } catch (err) {
-                        if (i === maxRetries - 1) aiText = "네트워크 오류로 답변을 생성하지 못했습니다. 다시 시도해 주세요.";
-                        else await new Promise(r => setTimeout(r, delays[i]));
-                    }
-                }
-
-                setMessages(prev => [...prev, { role: 'ai', text: aiText }]);
-                setIsGenerating(false);
-            };
-
-            if (!isStarted) {
-                return (
-                    <div className="bg-white p-8 rounded-xl border shadow-sm h-full flex flex-col items-center justify-center text-center">
-                        <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 shadow-sm border border-blue-200">
-                            <Icon name="PenTool" size={32}/>
-                        </div>
-                        <h3 className="text-xl font-bold mb-2 text-gray-800">HSKTC Layered Writing AI 튜터</h3>
-                        <p className="text-gray-500 max-w-md text-sm leading-relaxed">
-                            학생들의 단계적 사고 확장을 돕습니다. 소스 텍스트를 분석하여 
-                            <br/><span className="font-bold text-blue-600">뼈대(Core) → 연결(Logic) → 확장(Creative)</span>의 
-                            <br/>3단계 글쓰기 과정을 가이드하고 피드백을 제공합니다.
-                        </p>
-                        <button onClick={startSession} className="mt-8 bg-blue-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-blue-700 transition-colors shadow-md flex items-center gap-2">
-                            글쓰기 훈련 시작
-                        </button>
-                    </div>
-                );
-            }
-
-            return (
-                <div className="flex flex-col h-full bg-white rounded-xl border shadow-sm overflow-hidden">
-                    <div className="bg-blue-600 text-white p-4 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                                <Icon name="PenTool" size={20} />
-                            </div>
-                            <div>
-                                <div className="font-bold text-sm">Layered Writing AI 튜터</div>
-                                <div className="text-xs text-blue-100 opacity-90">3단계 글쓰기 가이드 및 피드백</div>
-                            </div>
-                        </div>
-                        <button onClick={() => {setIsStarted(false); setMessages([]); setInput('');}} className="text-xs font-medium bg-blue-700/50 hover:bg-blue-800/50 px-3 py-1.5 rounded-lg transition-colors">
-                            초기화
-                        </button>
-                    </div>
-
-                    <div className="flex-1 overflow-y-auto p-4 space-y-5 bg-slate-50">
-                        {messages.map((msg, idx) => (
-                            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-[85%] rounded-2xl px-5 py-4 text-sm shadow-sm leading-relaxed ${
-                                    msg.role === 'user'
-                                    ? 'bg-blue-600 text-white rounded-tr-none'
-                                    : 'bg-white border text-gray-800 rounded-tl-none'
-                                }`}>
-                                    {msg.role === 'user' && <div className="font-bold text-xs text-blue-200 mb-2">{studentName}</div>}
-                                    {msg.role === 'ai' && <div className="font-bold text-xs text-gray-400 mb-2">AI 교육자</div>}
-                                    <div dangerouslySetInnerHTML={{ __html: msg.text.replace(/\n/g, '<br/>').replace(/\*\*(.*?)\*\*/g, '<strong class="text-blue-700 bg-blue-50 px-1 rounded">$1</strong>') }} />
-                                </div>
-                            </div>
-                        ))}
-                        {isGenerating && (
-                            <div className="flex justify-start">
-                                <div className="bg-white border text-gray-500 rounded-2xl rounded-tl-none px-5 py-4 text-sm shadow-sm flex items-center gap-2">
-                                    <span className="animate-bounce inline-block w-2 h-2 bg-gray-400 rounded-full"></span>
-                                    <span className="animate-bounce inline-block w-2 h-2 bg-gray-400 rounded-full" style={{animationDelay: '0.2s'}}></span>
-                                    <span className="animate-bounce inline-block w-2 h-2 bg-gray-400 rounded-full" style={{animationDelay: '0.4s'}}></span>
-                                    <span className="ml-2 text-xs font-medium">피드백 분석 중...</span>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="p-4 bg-white border-t">
-                        <div className="flex flex-col gap-3">
-                            <textarea
-                                value={input}
-                                onChange={e => setInput(e.target.value)}
-                                onKeyDown={e => {if(e.key==='Enter' && !e.shiftKey) { e.preventDefault(); handleSend();}}}
-                                disabled={isGenerating}
-                                placeholder="중국어로 글을 작성해주세요... (Shift+Enter로 줄바꿈)"
-                                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none resize-none h-24 disabled:bg-gray-50 transition-all"
-                            />
-                            <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-400">📝 단계별 규칙에 맞게 작성하면 AI가 채점합니다.</span>
-                                <button onClick={handleSend} disabled={isGenerating || !input.trim()} className="bg-blue-600 text-white px-8 py-2.5 rounded-xl hover:bg-blue-700 transition-colors shadow-sm font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-                                    {isGenerating ? '전송 중...' : '제출 및 피드백 받기'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            );
-        };
-
-        const WritingRoleplayModule = ({studentName}) => {
-             const [activeSubTab, setActiveSubTab] = useState('layered');
-
-             return (
-                <div className="flex flex-col h-full bg-gray-50 rounded-xl">
-                    <div className="flex border-b border-gray-200 bg-white rounded-t-xl px-4 pt-4 gap-2">
-                        <button onClick={() => setActiveSubTab('layered')} className={`px-6 py-3 font-medium text-sm rounded-t-lg transition-colors ${activeSubTab === 'layered' ? 'bg-gray-50 border-t border-x border-gray-200 text-blue-700 shadow-[0_2px_0_0_#f9fafb]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 border-transparent'}`}>
-                            4. HSKTC Layered Writing
-                        </button>
-                        <button onClick={() => setActiveSubTab('roleplay')} className={`px-6 py-3 font-medium text-sm rounded-t-lg transition-colors ${activeSubTab === 'roleplay' ? 'bg-gray-50 border-t border-x border-gray-200 text-indigo-700 shadow-[0_2px_0_0_#f9fafb]' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50 border-transparent'}`}>
-                            5. 🚀 Logic & Role-play (대립 토론)
-                        </button>
-                    </div>
-
-                    <div className="flex-1 overflow-hidden flex flex-col p-4 md:p-6">
-                        {activeSubTab === 'layered' && <LayeredWritingChat studentName={studentName} />}
-                        {activeSubTab === 'roleplay' && <RoleplayChat studentName={studentName} />}
-                    </div>
-                </div>
-             )
-        };
-
-        const RoleplayChat = ({studentName}) => {
-            const [messages, setMessages] = useState([
-                { role: 'system', text: '재택근무의 효율성에 대해 토론을 시작합니다. 저는 재택근무를 반대하는 보수적인 경영진 역할을 맡았습니다. 첫 번째 질문입니다.' },
-                { role: 'ai', text: '학생분, 재택근무가 소통의 부재를 야기하고 부서 간의 협업 효율을 떨어뜨린다고 생각하지 않으십니까? 대면 미팅 없이 어떻게 창의적인 아이디어가 나오겠습니까?' }
-            ]);
-            const [input, setInput] = useState('');
-
-            const handleSend = () => {
-                if(!input.trim()) return;
-                
-                const newMessages = [...messages, { role: 'user', text: input }];
-                setMessages(newMessages);
-                setInput('');
-
-                setTimeout(() => {
-                    setMessages(prev => [...prev, { 
-                        role: 'ai', 
-                        text: `논리적 전개는 좋습니다만, 어휘 선택이 평이하군요. 비즈니스 상황에 맞게 단순히 '서로 돕는다'가 아니라 **'상호 보완(取长补短)'**이나 **'효율 증대(事半功倍)'** 같은 고급 사자성어를 활용하여 다시 한번 설득해 보시겠어요?` 
-                    }]);
-                }, 1500);
-            };
-
-            return (
-                <div className="flex flex-col h-full bg-white rounded-xl border shadow-sm overflow-hidden">
-                    <div className="bg-indigo-600 text-white p-4 flex items-center gap-3">
-                        <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                            <Icon name="MessageSquare" size={20} />
-                        </div>
-                        <div>
-                            <div className="font-bold text-sm">토론형 상황극 AI 튜터</div>
-                            <div className="text-xs text-indigo-100 opacity-90">논리 방어 및 고급 어휘 체화 훈련</div>
-                        </div>
-                    </div>
-                    
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50">
-                        {messages.map((msg, idx) => (
-                            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                {msg.role === 'system' ? (
-                                    <div className="w-full text-center my-2">
-                                        <span className="bg-gray-200 text-gray-600 text-xs px-3 py-1 rounded-full">{msg.text}</span>
-                                    </div>
-                                ) : (
-                                    <div className={`max-w-[75%] rounded-2xl px-5 py-3 text-sm shadow-sm ${
-                                        msg.role === 'user' 
-                                        ? 'bg-indigo-600 text-white rounded-tr-none' 
-                                        : 'bg-white border text-gray-800 rounded-tl-none'
-                                    }`}>
-                                        {msg.role === 'user' && <div className="font-bold text-xs text-indigo-200 mb-1">{studentName}</div>}
-                                        {msg.role === 'ai' && <div className="font-bold text-xs text-gray-400 mb-1">AI 경영진</div>}
-                                        <div dangerouslySetInnerHTML={{ __html: msg.text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-600 bg-indigo-50 px-1 rounded">$1</strong>') }} />
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="p-4 bg-white border-t">
-                        <div className="flex items-center gap-2">
-                            <textarea 
-                                value={input} 
-                                onChange={e => setInput(e.target.value)}
-                                onKeyDown={e => {if(e.key==='Enter' && !e.shiftKey) { e.preventDefault(); handleSend();}}}
-                                placeholder="'연결(Logic)' 구조를 활용하여 답변을 작성하세요... (Shift+Enter로 줄바꿈)" 
-                                className="flex-1 border border-gray-300 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none h-14"
-                            />
-                            <button onClick={handleSend} className="bg-indigo-600 text-white p-3 h-14 rounded-xl hover:bg-indigo-700 transition-colors shadow-sm px-6 font-bold">
-                                전송
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )
-        }
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
