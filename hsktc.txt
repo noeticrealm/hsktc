@@ -1,0 +1,1796 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSK 빈칸 훈련 & 학생 관리 전문 시스템</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        body { font-family: 'Pretendard', 'Malgun Gothic', sans-serif; background-color: #f3f4f6; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* 아날로그 채점 애니메이션 */
+        @keyframes drawLine {
+            to { stroke-dashoffset: 0; }
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.3) rotate(-15deg); opacity: 0; }
+            50% { transform: scale(1.15) rotate(5deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 0.85; }
+        }
+        .mark-animate {
+            animation: drawLine 0.4s ease-out forwards, popIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            transform-origin: center;
+        }
+        .mark-animate-fast {
+            animation: drawLine 0.2s ease-out forwards, popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+            transform-origin: center;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const app = Object.keys(firebaseConfig).length > 0 ? initializeApp(firebaseConfig) : null;
+        const auth = app ? getAuth(app) : null;
+        const db = app ? getFirestore(app) : null;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'hsk-academy-mock-id';
+
+        window.firebaseServices = { auth, db, appId, signInAnonymously, signInWithCustomToken, onAuthStateChanged, signOut, collection, doc, setDoc, getDoc, onSnapshot };
+    </script>
+
+    <script type="text/babel" data-type="module">
+        const { useState, useEffect, useRef } = React;
+
+        const Icon = ({ name, size = 24, className = "", strokeWidth = 2 }) => {
+            const icons = {
+                Archive: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="20" height="5" x="2" y="4" rx="1"/><path d="M4 9v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9"/><path d="M10 13h4"/></svg>,
+                BookOpen: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+                LogOut: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>,
+                CheckCircle: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+                Lock: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>,
+                PlayCircle: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>,
+                Activity: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>,
+                ShieldAlert: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2-1 4-3 5.96-8.9a1 1 0 0 1 1.08 0C14 2 16 4 18 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>,
+                LayoutDashboard: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>,
+                FileText: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>,
+                Users: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+                Eye: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>,
+                Plus: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M5 12h14"/><path d="M12 5v14"/></svg>,
+                Trash2: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>,
+                Edit3: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>,
+                ChevronLeft: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m15 18-6-6 6-6"/></svg>,
+                X: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>,
+                Sparkles: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M19 17v4"/><path d="M3 5h4"/><path d="M17 19h4"/></svg>,
+                MessageSquare: <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            };
+            return icons[name] || null;
+        };
+
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [isAuthLoading, setIsAuthLoading] = useState(true);
+            const [academyLoggedIn, setAcademyLoggedIn] = useState(false);
+            const [userInfo, setUserInfo] = useState({ name: '', email: '', id: '', isAdmin: false });
+            const [activeMenu, setActiveMenu] = useState('cloze');
+
+            const [submissions, setSubmissions] = useState([
+                { id: 'SUB-001', studentId: 'STU-075', studentName: '김유신', title: '성공하지 못하는 사람 4유형 빈칸', type: 'Scaffold Cloze', score: 85, submittedAt: new Date(Date.now() - 3600000), status: 'pending' },
+                { id: 'SUB-002', studentId: 'STU-088', studentName: '이순신', title: '[모의고사 1] 기후 변화와 일사량', type: 'Scaffold Cloze', score: 92, submittedAt: new Date(Date.now() - 10800000), status: 'pending' }
+            ]);
+
+            const [tasks, setTasks] = useState([
+                { id: 1, level: '6급', category: '읽기 훈련', title: '성공하지 못하는 사람의 4가지 유형', type: 'Scaffold Cloze', status: '활성', date: '2026-04-05', isLegacy: true },
+                { 
+                    id: 5, level: '6급', category: '읽기 훈련', title: '[모의고사 1] 기후 변화와 일사량', type: 'Scaffold Cloze', status: '활성', date: '2026-04-06', isLegacy: false,
+                    taskData: {
+                        dictionaryList: [
+                            { word: "碳排放", pinyin: "tàn pái fàng", mean: "탄소 배출" },
+                            { word: "应对手段", pinyin: "yìng duì shǒu duàn", mean: "대응 수단" },
+                            { word: "减少抵达地球的太阳能辐射量是阻止全球气候变化最为有效的方法", pinyin: "jiǎn shǎo dǐ dá dì qiú de tài yáng néng fú shè liàng shì zǔ zhǐ quán qiú qì hòu biàn huà zuì wéi yǒu xiào de fāng fǎ", mean: "지구에 도달하는 태양 에너지 방사량을 줄이는 것이 전 지구적 기후 변화를 막는 가장 효과적인 방법이다" },
+                            { word: "发生逆转", pinyin: "fā shēng nì zhuǎn", mean: "역전되다" },
+                            { word: "辐射量", pinyin: "fú shè liàng", mean: "방사량" },
+                            { word: "骤降", pinyin: "zhòu jiàng", mean: "급강하하다" },
+                            { word: "气溶胶", pinyin: "qì róng jiāo", mean: "에어로졸" },
+                            { word: "强制性地", pinyin: "qiáng zhì xìng de", mean: "강제적으로" },
+                            { word: "温度下降的速度超过了地球上动植物所能适应的程度", pinyin: "wēn dù xià jiàng de sù dù chāo guò le dì qiú shàng dòng zhí wù suǒ néng shì yìng de chéng dù", mean: "온도 하강 속도가 지구상의 동식물이 적응할 수 있는 정도를 초과하다" }
+                        ],
+                        correctAnswers: {
+                            1: { 1: "碳排放", 2: "应对手段", 3: "减少抵达地球的太阳能辐射量是阻止全球气候变化最为有效的方法", 4: "发生逆转", 5: "辐射量", 6: "骤降", 7: "气溶胶", 8: "强制性地", 9: "温度下降的速度超过了地球上动植物所能适应的程度" },
+                            2: { 1: "碳排放", 2: "辐射量", 3: "骤降", 4: "气溶胶" },
+                            3: { 1: "应对手段", 2: "发生逆转", 3: "强制性地" },
+                            4: { 1: "减少抵达地球的太阳能辐射量是阻止全球气候变化最为有效的方法", 2: "温度下降的速度超过了地球上动植物所能适应的程度" }
+                        },
+                        tokens: [
+                            { type: "text", value: "面对全球变暖现象，人们为了减少" },
+                            { type: "blank", value: "碳排放", pinyin: "tàn pái fàng", meaning: "탄소 배출", step: 2, stepMap: { 1: 1, 2: 1 } },
+                            { type: "text", value: "，提出了节约能源消耗、减少化石能源的使用以及加大可再生能源利用等" },
+                            { type: "blank", value: "应对手段", pinyin: "yìng duì shǒu duàn", meaning: "대응 수단", step: 3, stepMap: { 1: 2, 3: 1 } },
+                            { type: "text", value: "。然而，一些气候科学家认为，" },
+                            { type: "blank", value: "减少抵达地球的太阳能辐射量是阻止全球气候变化最为有效的方法", pinyin: "jiǎn shǎo dǐ dá dì qiú de tài yáng néng fú shè liàng shì zǔ zhǐ quán qiú qì hòu biàn huà zuì wéi yǒu xiào de fāng fǎ", meaning: "지구에 도달하는 태양 에너지 방사량을 줄이는 것이 전 지구적 기후 변화를 막는 가장 효과적인 방법이다", step: 4, stepMap: { 1: 3, 4: 1 } },
+                            { type: "text", value: "。为了阻止海平面上升或让上升趋势" },
+                            { type: "blank", value: "发生逆转", pinyin: "fā shēng nì zhuǎn", meaning: "역전되다", step: 3, stepMap: { 1: 4, 3: 2 } },
+                            { type: "text", value: "，人们需要迅速减少太阳能对地球的" },
+                            { type: "blank", value: "辐射量", pinyin: "fú shè liàng", meaning: "방사량", step: 2, stepMap: { 1: 5, 2: 2 } },
+                            { type: "text", value: "。然而辐射量快速减少将导致地球大气温度" },
+                            { type: "blank", value: "骤降", pinyin: "zhòu jiàng", meaning: "급강하하다", step: 2, stepMap: { 1: 6, 2: 3 } },
+                            { type: "text", value: "，应采取渐变法。目前，控制太阳能辐射的方法包括用卫星遮挡太阳、让地球表面反射更多的太阳光或者在上层大气中放置" },
+                            { type: "blank", value: "气溶胶", pinyin: "qì róng jiāo", meaning: "에어로졸", step: 2, stepMap: { 1: 7, 2: 4 } },
+                            { type: "text", value: "粒子模拟火山爆发效应等。有科学家指出：" },
+                            { type: "blank", value: "强制性地", pinyin: "qiáng zhì xìng de", meaning: "강제적으로", step: 3, stepMap: { 1: 8, 3: 3 } },
+                            { type: "text", value: "阻止海平面升高可能导致气温快速下降。温度骤降的危害性可能会超过因碳排放导致全球变暖所带来的危害性，" },
+                            { type: "blank", value: "温度下降的速度超过了地球上动植物所能适应的程度", pinyin: "wēn dù xià jiàng de sù dù chāo guò le dì qiú shàng dòng zhí wù suǒ néng shì yìng de chéng dù", meaning: "온도 하강 속도가 지구상의 동식물이 적응할 수 있는 정도를 초과하다", step: 4, stepMap: { 1: 9, 4: 2 } },
+                            { type: "text", value: "，将是人们需要面对的另一个大问题。" }
+                        ]
+                    }
+                },
+                { 
+                    id: 6, level: '6급', category: '읽기 훈련', title: '[모의고사 2] 위저의 직업 설계', type: 'Scaffold Cloze', status: '활성', date: '2026-04-06', isLegacy: false,
+                    taskData: {
+                        dictionaryList: [
+                            { word: "首席执行官", pinyin: "shǒu xí zhí xíng guān", mean: "최고 경영자" },
+                            { word: "短板", pinyin: "duǎn bǎn", mean: "단점, 약점" },
+                            { word: "察言观色", pinyin: "chá yán guān sè", mean: "눈치를 보다" },
+                            { word: "扶摇直上", pinyin: "fú yáo zhí shàng", mean: "급격히 상승하다" },
+                            { word: "自己的成功固然有偶然因素", pinyin: "zì jǐ de chéng gōng gù rán yǒu ǒu rán yīn sù", mean: "자신의 성공에는 물론 우연한 요소도 있다" },
+                            { word: "而是要着眼于自己的职业前途", pinyin: "ér shì yào zhuó yǎn yú zì jǐ de zhí yè qián tú", mean: "오히려 자신의 직업적 미래에 착안해야 한다" },
+                            { word: "止步不前", pinyin: "zhǐ bù bù qián", mean: "제자리에 머물다" },
+                            { word: "淘汰", pinyin: "táo tài", mean: "도태되다" }
+                        ],
+                        correctAnswers: {
+                            1: { 1: "首席执行官", 2: "自己的成功固然有偶然因素", 3: "短板", 4: "察言观色", 5: "扶摇直上", 6: "而是要着眼于自己的职业前途", 7: "止步不前", 8: "淘汰" },
+                            2: { 1: "首席执行官", 2: "短板", 3: "淘汰" },
+                            3: { 1: "察言观色", 2: "扶摇直上", 3: "止步不前" },
+                            4: { 1: "自己的成功固然有偶然因素", 2: "而是要着眼于自己的职业前途" }
+                        },
+                        tokens: [
+                            { type: "text", value: "24岁担任万国证券管理总部的副总经理，到37岁成为阿里巴巴的" },
+                            { type: "blank", value: "首席执行官", pinyin: "shǒu xí zhí xíng guān", meaning: "최고 경영자", step: 2, stepMap: { 1: 1, 2: 1 } },
+                            { type: "text", value: "的卫哲，成了比孙振耀、唐骏更值钱的“金领”。这时，他的第一任老板——管金生给他的评价却是：“卫哲不聪明。”对此，卫哲并不否认，同时他也表示：" },
+                            { type: "blank", value: "自己的成功固然有偶然因素", pinyin: "zì jǐ de chéng gōng gù rán yǒu ǒu rán yīn sù", meaning: "자신의 성공에는 물론 우연한 요소도 있다", step: 4, stepMap: { 1: 2, 4: 1 } },
+                            { type: "text", value: "，但更重要的是他在职业规划中不断地拉长自己的“" },
+                            { type: "blank", value: "短板", pinyin: "duǎn bǎn", meaning: "단점, 약점", step: 2, stepMap: { 1: 3, 2: 2 } },
+                            { type: "text", value: "”。1993年，上海外国语大学英语专业毕业的卫哲进入了万国证券，工作是为万国证券翻译年报。工作中的卫哲很虚心，也很勤奋，加上善于" },
+                            { type: "blank", value: "察言观色", pinyin: "chá yán guān sè", meaning: "눈치를 보다", step: 3, stepMap: { 1: 4, 3: 1 } },
+                            { type: "text", value: "，一年之后，卫哲" },
+                            { type: "blank", value: "扶摇直上", pinyin: "fú yáo zhí shàng", meaning: "급격히 상승하다", step: 3, stepMap: { 1: 5, 3: 2 } },
+                            { type: "text", value: "，成了万国证券管理总部的副总经理。要想获得发展，就不能满足于当前的职业能力，" },
+                            { type: "blank", value: "而是要着眼于自己的职业前途", pinyin: "ér shì yào zhuó yǎn yú zì jǐ de zhí yè qián tú", meaning: "오히려 자신의 직업적 미래에 착안해야 한다", step: 4, stepMap: { 1: 6, 4: 2 } },
+                            { type: "text", value: "。如果" },
+                            { type: "blank", value: "止步不前", pinyin: "zhǐ bù bù qián", meaning: "제자리에 머물다", step: 3, stepMap: { 1: 7, 3: 3 } },
+                            { type: "text", value: "，也许现在还有适合你的岗位，但随着科技的发展、机械化的普及，你就会被逐渐" },
+                            { type: "blank", value: "淘汰", pinyin: "táo tài", meaning: "도태되다", step: 2, stepMap: { 1: 8, 2: 3 } },
+                            { type: "text", value: "。所以，要有职业危机意识，结合自己的个性，努力拉长自己的“短板”，才能不断进步。" }
+                        ]
+                    }
+                },
+                { 
+                    id: 7, level: '6급', category: '읽기 훈련', title: '[모의고사 3] 나무늘보의 생존 방식', type: 'Scaffold Cloze', status: '활성', date: '2026-04-06', isLegacy: false,
+                    taskData: {
+                        dictionaryList: [
+                            { word: "栖息", pinyin: "qī xī", mean: "서식하다" },
+                            { word: "它的运动速度比地球上其他任何哺乳动物都要慢", pinyin: "tā de yùn dòng sù dù bǐ dì qiú shàng qí tā rèn hé bǔ rǔ dòng wù dōu yào màn", mean: "그것의 이동 속도는 지구상의 다른 어떤 포유동물보다 느리다" },
+                            { word: "闻名世界", pinyin: "wén míng shì jiè", mean: "세계적으로 유명하다" },
+                            { word: "嗜睡者", pinyin: "shì shuì zhě", mean: "기면증 환자" },
+                            { word: "避免能量的损耗", pinyin: "bì miǎn néng liàng de sǔn hào", mean: "에너지 소모를 피하다" },
+                            { word: "伪装", pinyin: "wěi zhuāng", mean: "위장" },
+                            { word: "并从这个“藻类装”里获取营养", pinyin: "bìng cóng zhè ge “zǎo lèi zhuāng” lǐ huò qǔ yíng yǎng", mean: "그리고 이 '조류 옷'에서 영양분을 얻는다" }
+                        ],
+                        correctAnswers: {
+                            1: { 1: "栖息", 2: "它的运动速度比地球上其他任何哺乳动物都要慢", 3: "闻名世界", 4: "嗜睡者", 5: "避免能量的损耗", 6: "伪装", 7: "并从这个“藻类装”里获取营养" },
+                            2: { 1: "栖息", 2: "嗜睡者", 3: "伪装" },
+                            3: { 1: "闻名世界", 2: "避免能量的损耗" },
+                            4: { 1: "它的运动速度比地球上其他任何哺乳动物都要慢", 2: "并从这个“藻类装”里获取营养" }
+                        },
+                        tokens: [
+                            { type: "text", value: "树懒是" },
+                            { type: "blank", value: "栖息", pinyin: "qī xī", meaning: "서식하다", step: 2, stepMap: { 1: 1, 2: 1 } },
+                            { type: "text", value: "在树上的一种食草动物。" },
+                            { type: "blank", value: "它的运动速度比地球上其他任何哺乳动物都要慢", pinyin: "tā de yùn dòng sù dù bǐ dì qiú shàng qí tā rèn hé bǔ rǔ dòng wù dōu yào màn", meaning: "그것의 이동 속도는 지구상의 다른 어떤 포유동물보다 느리다", step: 4, stepMap: { 1: 2, 4: 1 } },
+                            { type: "text", value: "，并且以“一天的行进距离不超过38米”而" },
+                            { type: "blank", value: "闻名世界", pinyin: "wén míng shì jiè", meaning: "세계적으로 유명하다", step: 3, stepMap: { 1: 3, 3: 1 } },
+                            { type: "text", value: "。1983年，一个研究小组对被捕获的树懒进行了观察研究，发现它们一天要睡16小时，因此将它们称为动物王国里的重度" },
+                            { type: "blank", value: "嗜睡者", pinyin: "shì shuì zhě", meaning: "기면증 환자", step: 2, stepMap: { 1: 4, 2: 2 } },
+                            { type: "text", value: "。要想在这种能量摄入极低的饮食方式下正常生活，树懒只能通过缓慢移动之类的方法来" },
+                            { type: "blank", value: "避免能量的损耗", pinyin: "bì miǎn néng liàng de sǔn hào", meaning: "에너지 소모를 피하다", step: 3, stepMap: { 1: 5, 3: 2 } },
+                            { type: "text", value: "。在树叶稀少的时候，树懒也不需要为食物担心。因为它们的皮毛有淡淡的绿色，能帮助它们躲过捕食者。这种" },
+                            { type: "blank", value: "伪装", pinyin: "wěi zhuāng", meaning: "위장", step: 2, stepMap: { 1: 6, 2: 3 } },
+                            { type: "text", value: "不是色素，而是藻类。自然潮湿的生活环境，让树懒的皮毛中能够形成藻类。树懒可以舔食自己的皮毛，" },
+                            { type: "blank", value: "并从这个“藻类装”里获取营养", pinyin: "bìng cóng zhè ge “zǎo lèi zhuāng” lǐ huò qǔ yíng yǎng", meaning: "그리고 이 '조류 옷'에서 영양분을 얻는다", step: 4, stepMap: { 1: 7, 4: 2 } },
+                            { type: "text", value: "。" }
+                        ]
+                    }
+                }
+            ]);
+
+            const handleAddSubmission = (data) => {
+                const newSub = {
+                    id: `SUB-${Math.floor(Math.random() * 100000)}`,
+                    studentId: userInfo.id,
+                    studentName: userInfo.name,
+                    submittedAt: new Date(),
+                    status: 'pending',
+                    ...data
+                };
+                setSubmissions(prev => [newSub, ...prev]);
+            };
+
+            const handleApproveSubmission = (id) => {
+                setSubmissions(prev => prev.map(s => s.id === id ? { ...s, status: 'approved', approvedAt: new Date() } : s));
+            };
+
+            const handleSaveNewTask = (newTaskData) => {
+                const newTask = {
+                    id: tasks.length > 0 ? Math.max(...tasks.map(t => t.id)) + 1 : 1,
+                    ...newTaskData
+                };
+                setTasks(prev => [newTask, ...prev]);
+            };
+
+            useEffect(() => {
+                const initAuth = async () => {
+                    const { auth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } = window.firebaseServices;
+                    if (!auth) {
+                        setIsAuthLoading(false);
+                        return;
+                    }
+
+                    try {
+                        if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                            await signInWithCustomToken(auth, __initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    } catch (error) {
+                        console.error("Auth error:", error);
+                    }
+
+                    const unsubscribe = onAuthStateChanged(auth, (u) => {
+                        setUser(u);
+                        setIsAuthLoading(false);
+                    });
+                    return () => unsubscribe();
+                };
+                initAuth();
+            }, []);
+
+            const handleLogin = (email, password) => {
+                if (email === "yijoonho@hsktc.com" && password === "3300") {
+                    setUserInfo({ name: "이준호", email, id: "ADMIN-001", isAdmin: true });
+                    setAcademyLoggedIn(true);
+                    setActiveMenu('admin');
+                } else if(password === "HSK300" && email.trim() !== "") {
+                    const name = email.split('@')[0] || "학생"; 
+                    setUserInfo({ name, email, id: `STU-${Math.floor(Math.random()*10000)}`, isAdmin: false });
+                    setAcademyLoggedIn(true);
+                    setActiveMenu('cloze');
+                }
+            };
+
+            const handleLogout = () => {
+                setAcademyLoggedIn(false);
+                setUserInfo({name: '', email: '', id: '', isAdmin: false});
+            };
+
+            if (isAuthLoading) {
+                return <div className="min-h-screen flex items-center justify-center bg-gray-100"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div></div>;
+            }
+
+            if (!academyLoggedIn) {
+                return <LoginScreen onLogin={handleLogin} />;
+            }
+
+            return (
+                <div className="flex h-screen bg-gray-50 overflow-hidden text-gray-800">
+                    <Sidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} handleLogout={handleLogout} userName={userInfo.name} isAdmin={userInfo.isAdmin} />
+                    <main className="flex-1 overflow-y-auto p-6 md:p-10">
+                        <header className="mb-8 border-b pb-4 flex justify-between items-center">
+                            <div>
+                                <h1 className="text-3xl font-bold text-gray-900">HSK 빈칸 훈련 & 학생 관리 전문 시스템</h1>
+                                <p className="text-gray-500 mt-1">HSK 독해 심화 빈칸 훈련 생성 및 학생 학사 관리 시스템입니다.</p>
+                            </div>
+                            <div className="hidden md:flex items-center space-x-2 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100">
+                                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                                <span className="text-sm font-medium text-gray-600">{userInfo.name} {userInfo.isAdmin ? '관리자' : '학생'} 접속중</span>
+                            </div>
+                        </header>
+                        
+                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 min-h-[70vh]">
+                            {activeMenu === 'cloze' && !userInfo.isAdmin && <ClozeModule setActiveMenu={setActiveMenu} onSubmit={handleAddSubmission} tasks={tasks} submissions={submissions} userInfo={userInfo} />}
+                            {activeMenu === 'archive' && !userInfo.isAdmin && <ArchiveDashboard userInfo={userInfo} submissions={submissions} />}
+                            {activeMenu === 'admin' && userInfo.isAdmin && <AdminDashboard submissions={submissions} onApprove={handleApproveSubmission} tasks={tasks} setTasks={setTasks} onSaveNewTask={handleSaveNewTask} />}
+                        </div>
+                    </main>
+                </div>
+            );
+        };
+
+        const LoginScreen = ({ onLogin }) => {
+            const [email, setEmail] = useState('');
+            const [password, setPassword] = useState('');
+            const [error, setError] = useState('');
+
+            const handleSubmit = () => {
+                if ((email === "yijoonho@hsktc.com" && password === "3300") || (password === "HSK300" && email.trim() !== "")) {
+                    onLogin(email, password);
+                } else {
+                    setError('학원 계정(이메일)과 정확한 비밀번호를 입력해주세요.');
+                }
+            };
+
+            return (
+                <div className="min-h-screen flex flex-col items-center justify-center bg-[#0b1121] px-4 font-sans">
+                    <div className="text-center mb-8 flex flex-col items-center">
+                        <div className="w-14 h-14 bg-[#1e293b]/50 rounded-2xl flex items-center justify-center mb-6 border border-slate-700/50 shadow-[0_0_15px_rgba(59,130,246,0.15)]">
+                            <Icon name="Archive" size={26} className="text-[#3b82f6]" />
+                        </div>
+                        <h1 className="text-3xl font-bold text-white tracking-tight mb-3">
+                            HSKTC <span className="text-[#3b82f6] font-normal">Cloze Master</span>
+                        </h1>
+                        <p className="text-[10px] text-gray-400 tracking-[0.25em] mb-10 font-medium">
+                            SCAFFOLD CLOZE & STUDENT MANAGEMENT
+                        </p>
+                        <p className="text-gray-200 text-[15px] leading-relaxed">
+                            "HSK 3.0 빈칸 훈련 및 학사 관리의 모든 것"
+                        </p>
+                    </div>
+
+                    <div className="bg-white max-w-[360px] w-full rounded-[1.25rem] shadow-2xl overflow-hidden">
+                        <div className="bg-[#f4f5f7] px-4 py-3.5 flex items-center justify-center relative border-b border-gray-100">
+                            <div className="absolute left-4 flex gap-1.5">
+                                <div className="w-2.5 h-2.5 bg-[#ff5f56] rounded-full"></div>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-gray-500">
+                                <Icon name="Lock" size={13} strokeWidth={2.5} />
+                                <span className="text-[10px] font-bold tracking-widest mt-0.5">AUTHORIZED PERSONNEL ONLY</span>
+                            </div>
+                        </div>
+
+                        <div className="p-7 space-y-5">
+                            {error && <div className="bg-rose-50 text-rose-500 text-xs font-bold p-3 rounded-lg text-center animate-in fade-in zoom-in-95">{error}</div>}
+                            <div>
+                                <label className="block text-[13px] font-bold text-gray-700 mb-2">학원 계정 (이메일)</label>
+                                <input 
+                                    type="email" 
+                                    value={email} 
+                                    onChange={(e) => {setEmail(e.target.value); setError('');}} 
+                                    placeholder="student@hsktc.com" 
+                                    className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-[15px] placeholder-gray-400" 
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[13px] font-bold text-gray-700 mb-2">접속 비밀번호</label>
+                                <input 
+                                    type="password" 
+                                    value={password} 
+                                    onChange={(e) => {setPassword(e.target.value); setError('');}} 
+                                    placeholder="••••••••" 
+                                    className="w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all text-lg placeholder-gray-400 tracking-[0.2em]" 
+                                    onKeyDown={e => {if(e.key==='Enter') handleSubmit();}}
+                                />
+                            </div>
+                            <button 
+                                onClick={handleSubmit} 
+                                className="w-full bg-[#2563eb] hover:bg-blue-700 text-white font-bold py-4 px-4 rounded-xl transition-colors shadow-[0_4px_14px_0_rgba(37,99,235,0.39)] hover:shadow-[0_6px_20px_rgba(37,99,235,0.23)] flex justify-center items-center text-[15px] mt-3">
+                                시스템 접속하기
+                            </button>
+                        </div>
+                        
+                        <div className="pb-7 text-center">
+                            <p className="text-[11px] text-gray-500">
+                                접속 권한이 없으신가요? 선생님께 계정 승인을 요청하세요.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Sidebar = ({ activeMenu, setActiveMenu, handleLogout, userName, isAdmin }) => {
+            const menuItems = isAdmin ? [
+                { id: 'admin', label: '관리자 대시보드', icon: 'LayoutDashboard' }
+            ] : [
+                { id: 'cloze', label: '빈칸 훈련 (Scaffold Cloze)', icon: 'BookOpen' },
+                { id: 'archive', label: '학습 기록 (Archive)', icon: 'Archive' }
+            ];
+
+            return (
+                <div className="w-[280px] bg-white border-r border-gray-100 flex flex-col hidden md:flex z-10 shadow-[4px_0_24px_rgba(0,0,0,0.02)] relative font-sans">
+                    <div className="p-7 pb-4">
+                        <h2 className="text-[13px] font-extrabold text-gray-400 tracking-widest mb-6">메인 메뉴</h2>
+                        
+                        <div className="bg-gray-50 rounded-[1.25rem] p-5 mb-4 border border-gray-100/80 shadow-sm transition-all hover:shadow-md">
+                            <div className="flex items-center gap-4">
+                                <div className="w-12 h-12 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-black text-xl shadow-inner">
+                                    {userName ? userName.charAt(0) : 'S'}
+                                </div>
+                                <div className="flex flex-col">
+                                    <div className="text-gray-800 font-extrabold text-[15px]">성명: {userName}</div>
+                                    {!isAdmin && <div className="text-indigo-600 font-bold text-[11px] mt-1 bg-indigo-100/80 px-2.5 py-1 rounded-md inline-block text-center tracking-wide">학생 계정</div>}
+                                    {isAdmin && <div className="text-rose-600 font-bold text-[11px] mt-1 bg-rose-100/80 px-2.5 py-1 rounded-md inline-block text-center tracking-wide">관리자 계정</div>}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div className="flex-1 px-5 space-y-2">
+                        {menuItems.map(item => (
+                            <button key={item.id} onClick={() => setActiveMenu(item.id)}
+                                className={`w-full flex items-center gap-4 px-5 py-4 rounded-[1.25rem] transition-all duration-300 font-bold text-[15px] ${
+                                    activeMenu === item.id 
+                                    ? 'bg-[#f0f4ff] text-[#4f46e5] shadow-[0_2px_10px_rgba(79,70,229,0.1)]' 
+                                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+                                }`}>
+                                <Icon name={item.icon} size={22} className={activeMenu === item.id ? 'text-[#4f46e5]' : 'text-gray-400'} strokeWidth={activeMenu === item.id ? 2.5 : 2} />
+                                {item.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="p-5 border-t border-gray-50 mt-auto">
+                        <button onClick={handleLogout} className="w-full flex items-center justify-center gap-2 p-3 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all font-bold text-sm">
+                            <Icon name="LogOut" size={18} /> 로그아웃
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        const ClozeModule = ({ setActiveMenu, onSubmit, tasks, submissions, userInfo }) => {
+            const [activeTask, setActiveTask] = useState(null);
+
+            // Filter active Scaffold Cloze tasks
+            const clozeTasks = tasks.filter(t => t.type === 'Scaffold Cloze' && t.status === '활성');
+
+            if (activeTask) {
+                return (
+                    <div className="flex flex-col h-full animate-in fade-in duration-300 p-2 md:p-4">
+                        <div className="mb-4 shrink-0">
+                             <button onClick={() => setActiveTask(null)} className="flex items-center gap-2 text-gray-500 hover:text-indigo-600 font-bold transition-colors">
+                                 <Icon name="ChevronLeft" size={20}/> 과제 목록으로 돌아가기
+                             </button>
+                        </div>
+                        <ClozeSystem setActiveMenu={setActiveMenu} onSubmit={(data) => { onSubmit(data); setActiveTask(null); }} taskConfig={activeTask} />
+                    </div>
+                );
+            }
+
+            return (
+                <div className="flex flex-col h-full p-6 md:p-8 animate-in fade-in duration-300">
+                    <div className="flex items-center gap-3 border-b pb-4 mb-6">
+                        <div className="p-2 bg-indigo-100 text-indigo-600 rounded-lg">
+                            <Icon name="BookOpen" size={24} />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-extrabold text-gray-800">빈칸 훈련 (Scaffold Cloze)</h3>
+                            <p className="text-sm text-gray-500 font-medium mt-1">배정된 읽기 과제를 선택하여 단계별 빈칸 학습을 진행하세요.</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {clozeTasks.length > 0 ? clozeTasks.map(task => {
+                            const isSubmitted = submissions.some(s => s.studentId === userInfo.id && s.title === task.title);
+                            return (
+                                <div key={task.id} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col group">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md">{task.level}</span>
+                                        <span className="text-xs font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-md">{task.type}</span>
+                                    </div>
+                                    <h4 className="font-bold text-gray-800 text-[15px] mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">{task.title}</h4>
+                                    <div className="mt-auto pt-4 flex items-center justify-between border-t border-gray-50">
+                                        {isSubmitted ? (
+                                            <span className="text-sm font-bold text-green-500 flex items-center gap-1 w-full justify-center bg-green-50 py-2 rounded-xl">
+                                                <Icon name="CheckCircle" size={16}/> 제출 완료
+                                            </span>
+                                        ) : (
+                                            <button onClick={() => setActiveTask(task)} className="w-full bg-indigo-50 text-indigo-700 py-2 rounded-xl text-sm font-bold hover:bg-indigo-600 hover:text-white transition-colors flex items-center justify-center gap-2">
+                                                <Icon name="PlayCircle" size={16}/> 학습 시작
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            )
+                        }) : (
+                            <div className="col-span-full text-center py-12 text-gray-500">배정된 빈칸 훈련 과제가 없습니다.</div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const AnalogMark = ({ isCorrect, isPartial }) => {
+            const circlePath = "M50,15 c-25,0 -40,15 -40,35 c0,22 18,38 40,38 c25,0 40,-15 40,-38 c0,-20 -15,-32 -35,-35";
+            const trianglePath = "M50,15 l35,65 l-70,0 z";
+            const slashPath = "M20,80 l60,-60";
+
+            if (isPartial) {
+                return (
+                    <svg className="absolute -inset-2 w-[calc(100%+1rem)] h-[calc(100%+1rem)] pointer-events-none z-20" viewBox="0 0 100 100">
+                        <path d={trianglePath} fill="none" stroke="#f59e0b" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" className="mark-animate" style={{ strokeDasharray: 250, strokeDashoffset: 250 }} />
+                    </svg>
+                );
+            } else if (isCorrect) {
+                return (
+                    <svg className="absolute -inset-2 w-[calc(100%+1rem)] h-[calc(100%+1rem)] pointer-events-none z-20" viewBox="0 0 100 100">
+                        <path d={circlePath} fill="none" stroke="#ef4444" strokeWidth="5" strokeLinecap="round" className="mark-animate" style={{ strokeDasharray: 300, strokeDashoffset: 300 }} />
+                    </svg>
+                );
+            } else {
+                return (
+                     <svg className="absolute -inset-2 w-[calc(100%+1rem)] h-[calc(100%+1rem)] pointer-events-none z-20" viewBox="0 0 100 100">
+                        <path d={slashPath} fill="none" stroke="#ef4444" strokeWidth="5" strokeLinecap="round" className="mark-animate-fast" style={{ strokeDasharray: 150, strokeDashoffset: 150 }} />
+                    </svg>
+                );
+            }
+        };
+
+        const ClozeSystem = ({ setActiveMenu, onSubmit, taskConfig }) => {
+            const [step, setStep] = useState(1);
+            const [inputs, setInputs] = useState({ 1: {}, 2: {}, 3: {}, 4: {} });
+            const [isEvaluating, setIsEvaluating] = useState(false);
+            const [evaluationResults, setEvaluationResults] = useState({ 1: null, 2: null, 3: null, 4: null });
+            const [scores, setScores] = useState({ 1: 0, 2: 0, 3: 0, 4: 0 });
+            const [evaluatedSteps, setEvaluatedSteps] = useState({ 1: false, 2: false, 3: false, 4: false });
+
+            const isDynamic = taskConfig ? !taskConfig.isLegacy : false;
+            const dynamicData = isDynamic && taskConfig ? taskConfig.taskData : null;
+            const currentTitle = taskConfig ? taskConfig.title : '';
+
+            const correctAnswers = isDynamic && dynamicData ? dynamicData.correctAnswers : {
+                1: {
+                    1: "博客", 2: "陈旧", 3: "当今社会知识更新的速度加快", 4: "倍增", 5: "知识爆炸",
+                    6: "应付一辈子", 7: "已完全不可能了", 8: "终身教育", 9: "单一", 10: "激烈",
+                    11: "司空见惯", 12: "害怕", 13: "日子会不好过", 14: "积压物资", 15: "唯一的办法就是多学几手",
+                    16: "一专多能", 17: "一棵树上吊死", 18: "脆弱", 19: "打退堂鼓", 20: "稍有不顺利情绪就降为零",
+                    21: "这样的人在今后的竞争中必然不易成功", 22: "节奏", 23: "竞争压力加大", 24: "障碍", 25: "第四种是目光短浅的人",
+                    26: "鼠目寸光", 27: "你能看多远，你便能走多远", 28: "规划", 29: "不吃香", 30: "以后更不受欢迎"
+                },
+                2: { 1: "博客", 2: "陈旧", 3: "倍增", 4: "单一", 5: "激烈", 6: "害怕", 7: "脆弱", 8: "节奏", 9: "障碍", 10: "规划" },
+                3: { 1: "知识爆炸", 2: "应付一辈子", 3: "终身教育", 4: "司空见惯", 5: "积压物资", 6: "一专多能", 7: "一棵树上吊死", 8: "打退堂鼓", 9: "鼠目寸光", 10: "不吃香" },
+                4: { 1: "当今社会知识更新的速度加快", 2: "已完全不可能了", 3: "日子会不好过", 4: "唯一的办法就是多学几手", 5: "稍有不顺利情绪就降为零", 6: "这样的人在今后的竞争中必然不易成功", 7: "竞争压力加大", 8: "第四种是目光短浅的人", 9: "你能看多远，你便能走多远", 10: "以后更不受欢迎" }
+            };
+
+            const dictionaryList = isDynamic && dynamicData ? dynamicData.dictionaryList : [
+                { word: "博客", pinyin: "bókè", mean: "블로그" },
+                { word: "陈旧", pinyin: "chénjiù", mean: "낡다, 진부하다" },
+                { word: "当今社会知识更新的速度加快", pinyin: "dāngjīn shèhuì zhīshì gēngxīn de sùdù jiākuài", mean: "오늘날 사회는 지식 갱신 속도가 빨라진다" },
+                { word: "倍增", pinyin: "bèizēng", mean: "배가되다, 급증하다" },
+                { word: "知识爆炸", pinyin: "zhīshì bàozhà", mean: "지식 폭발" },
+                { word: "应付一辈子", pinyin: "yìngfù yíbèizi", mean: "평생을 대처하다" },
+                { word: "已完全不可能了", pinyin: "yǐ wánquán bù kěnéng le", mean: "이미 완전히 불가능해졌다" },
+                { word: "终身教育", pinyin: "zhōngshēn jiàoyù", mean: "평생 교육" },
+                { word: "单一", pinyin: "dānyī", mean: "단일하다, 단순하다" },
+                { word: "激烈", pinyin: "jīliè", mean: "치열하다, 격렬하다" },
+                { word: "司空见惯", pinyin: "sīkōng jiànguàn", mean: "자주 보아 예사롭다" },
+                { word: "害怕", pinyin: "hàipà", mean: "두려워하다" },
+                { word: "日子会不好过", pinyin: "rìzi huì bù hǎoguò", mean: "생활이 힘들어질 것이다" },
+                { word: "积压物资", pinyin: "jīyā wùzī", mean: "체화 물자, 쌓인 재고" },
+                { word: "唯一的办法就是多学几手", pinyin: "wéiyī de bànfǎ jiùshì duō xué jǐ shǒu", mean: "유일한 방법은 몇 가지 기술을 더 배우는 것이다" },
+                { word: "一专多能", pinyin: "yìzhuānduōnéng", mean: "한 가지 전문 지식과 여러 능력을 갖추다" },
+                { word: "一棵树上吊死", pinyin: "yì kē shù shàng diàosǐ", mean: "한 나무에 목매어 죽다, 융통성이 없다" },
+                { word: "脆弱", pinyin: "cuìruò", mean: "연약하다, 취약하다" },
+                { word: "打退堂鼓", pinyin: "dǎ tuìtánggǔ", mean: "꽁무니를 빼다, 중도에 포기하다" },
+                { word: "稍有不顺利情绪就降为零", pinyin: "shāo yǒu bù shùnlì qíngxù jiù jiàng wéi líng", mean: "조금만 순조롭지 않아도 의욕이 바닥으로 떨어진다" },
+                { word: "这样的人在今后的竞争中必然不易成功", pinyin: "zhèyàng de rén zài jīn hòu de jìngzhēng zhōng bìrán bù yì chénggōng", mean: "이런 사람은 향후 경쟁에서 결코 성공하기 쉽지 않다" },
+                { word: "节奏", pinyin: "jiézòu", mean: "리듬, 템포" },
+                { word: "竞争压力加大", pinyin: "jìngzhēng yālì jiādà", mean: "경쟁 압력이 커지다" },
+                { word: "障碍", pinyin: "zhàng'ài", mean: "장애" },
+                { word: "第四种是目光短浅的人", pinyin: "dì sì zhǒng shì mùguāng duǎnqiǎn de rén", mean: "네 번째는 근시안적인 사람이다" },
+                { word: "鼠目寸光", pinyin: "shǔmùcùnguāng", mean: "쥐의 눈처럼 근시안적이다" },
+                { word: "你能看多远，你便能走多远", pinyin: "nǐ néng kàn duō yuǎn, nǐ biàn néng zǒu duō yuǎn", mean: "당신이 멀리 볼 수 있는 만큼 멀리 갈 수 있다" },
+                { word: "规划", pinyin: "guīhuà", mean: "계획, 기획" },
+                { word: "不吃香", pinyin: "bù chīxiāng", mean: "인기가 없다, 환영받지 못하다" },
+                { word: "以后更不受欢迎", pinyin: "yǐhòu gèng bù shòu huānyíng", mean: "나중에는 더욱 환영받지 못할 것이다" }
+            ];
+
+            const handleSubmit = () => {
+                let earned = 0; let totalP = 0;
+                [1,2,3,4].forEach(s => {
+                    const stepTotal = correctAnswers && correctAnswers[s] ? Object.keys(correctAnswers[s]).length : 0;
+                    if(stepTotal > 0) {
+                        earned += (scores[s] / stepTotal);
+                        totalP += 1;
+                    }
+                });
+                const finalScore = totalP > 0 ? Math.round((earned / totalP) * 100) : 0;
+                
+                onSubmit({
+                    title: currentTitle,
+                    type: 'reading',
+                    score: finalScore
+                });
+                setActiveMenu('archive');
+            };
+
+            const handleInputChange = (targetStep, index, value) => {
+                setInputs(prev => ({
+                    ...prev,
+                    [targetStep]: {
+                        ...prev[targetStep],
+                        [index]: value
+                    }
+                }));
+            };
+
+            const formatFeedback = (text) => {
+                if (!text) return '';
+                let formatted = text.replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-700 bg-indigo-50 px-1 rounded">$1</strong>');
+                formatted = formatted.replace(/\*(.*?)\*/g, '<em class="text-indigo-600 font-bold">$1</em>');
+                formatted = formatted.replace(/\n/g, '<br/>');
+                return formatted;
+            };
+
+            const handleEvaluate = async () => {
+                setIsEvaluating(true);
+                const totalItems = correctAnswers && correctAnswers[step] ? Object.keys(correctAnswers[step]).length : 0;
+                
+                if(totalItems === 0) {
+                    setEvaluatedSteps(prev => ({...prev, [step]: true}));
+                    setIsEvaluating(false);
+                    return;
+                }
+
+                const apiKey = ""; 
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                const promptText = `당신은 학생들을 진심으로 응원하고 칭찬하는 다정한 HSK 중국어 선생님입니다.
+학생이 중국어 빈칸 채우기 과제인 Scaffold Cloze System 의 Step ${step} 문제를 방금 풀었습니다.
+
+[정답 목록 (문제 번호: 정답)]
+${JSON.stringify(correctAnswers[step], null, 2)}
+
+[학생이 제출한 답안 (문제 번호: 학생 답안)]
+${JSON.stringify(inputs[step] || {}, null, 2)}
+
+아래 지침에 따라 JSON 형식으로 평가 결과를 반환해주세요:
+1. 총점(totalScore)은 100점 만점 기준으로 환산하여 계산하세요. (문맥과 의미가 통하면 부분 점수도 인정해 주세요.)
+2. 각 문제별(evaluations)로 정답 여부(isCorrect: 의미상 맞으면 true), 부분 점수 여부(isPartial: 의미는 통하지만 어법/철자가 약간 틀린 경우 true), 피드백(feedback)을 포함하세요. (비워둔 칸은 무조건 오답 처리)
+3. 선생님의 메시지(teacherMessage)에는 점수를 밝게 알려주고(예: "와! 100점 만점에 85점이에요! 🎉"), 학생의 노력에 대한 듬뿍 담긴 칭찬과 따뜻한 격려를 작성해주세요. (마크다운 사용 가능)`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: promptText }] }],
+                    systemInstruction: { parts: [{ text: "당신은 학생의 답안을 아날로그 감성으로 100점 만점 기준으로 채점하며, 의미가 맞다면 부분 점수를 인정해주는 친절한 HSK 강사입니다." }] },
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                totalScore: { type: "INTEGER", description: "100점 만점 기준의 총점" },
+                                evaluations: {
+                                    type: "ARRAY",
+                                    items: {
+                                        type: "OBJECT",
+                                        properties: {
+                                            id: { type: "INTEGER", description: "문제 번호" },
+                                            isCorrect: { type: "BOOLEAN", description: "의미상 맞으면 true" },
+                                            isPartial: { type: "BOOLEAN", description: "부분 점수인 경우 true" },
+                                            feedback: { type: "STRING", description: "오답/부분점수일 경우 정답과 이유 설명" }
+                                        }
+                                    }
+                                },
+                                teacherMessage: { type: "STRING", description: "칭찬과 격려 멘트" }
+                            },
+                            required: ["totalScore", "evaluations", "teacherMessage"]
+                        }
+                    }
+                };
+
+                let resultObj = null;
+                const maxRetries = 5;
+                const delays = [1000, 2000, 4000, 8000, 16000];
+
+                for (let i = 0; i < maxRetries; i++) {
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                        if (!response.ok) throw new Error('API Request Failed');
+                        const data = await response.json();
+                        const textData = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] ? data.candidates[0].content.parts[0].text : null;
+                        if(textData) {
+                            resultObj = JSON.parse(textData);
+                            break;
+                        }
+                    } catch (err) {
+                        console.error(err);
+                        await new Promise(r => setTimeout(r, delays[i]));
+                    }
+                }
+
+                if(!resultObj) {
+                    let mockScore = 0;
+                    for(let i=1; i<=totalItems; i++) {
+                        if((inputs[step] && inputs[step][i] ? inputs[step][i] : '').trim() === correctAnswers[step][i]) mockScore++;
+                    }
+                    resultObj = {
+                        totalScore: Math.round((mockScore/totalItems)*100) || 0,
+                        evaluations: Object.keys(correctAnswers[step]).map(id => ({ id: parseInt(id), isCorrect: (inputs[step] && inputs[step][id] ? inputs[step][id] : '').trim() === correctAnswers[step][id], isPartial: false, feedback: `정답은 '${correctAnswers[step][id]}' 입니다.` })),
+                        teacherMessage: `채점 시스템 응답 지연으로 자동 채점되었습니다. (100점 만점 중 ${Math.round((mockScore/totalItems)*100)}점)`
+                    };
+                }
+
+                setEvaluationResults(prev => ({ ...prev, [step]: resultObj }));
+                setScores(prev => ({...prev, [step]: resultObj.totalScore}));
+                setEvaluatedSteps(prev => ({...prev, [step]: true}));
+                setIsEvaluating(false);
+            };
+
+            const renderBlank = (stepMap, currentStep, answer, pinyin) => {
+                const index = stepMap[currentStep];
+                const isTarget = index !== undefined;
+
+                if (isTarget) {
+                    const isClause = answer.length > 6;
+                    const widthStyle = { width: isClause ? `min(100%, max(10rem, ${answer.length * 1.1}em))` : `max(3.5rem, ${answer.length * 1.3}em)` };
+                    const userText = (inputs[currentStep] && inputs[currentStep][index] ? inputs[currentStep][index] : '').trim();
+
+                    if (evaluatedSteps[currentStep]) {
+                        const exactMatch = userText === correctAnswers[currentStep][index];
+                        const evalData = evaluationResults[currentStep] && evaluationResults[currentStep].evaluations ? evaluationResults[currentStep].evaluations.find(e => e.id === index) : null;
+                        
+                        const isCorrect = exactMatch || (evalData ? evalData.isCorrect : false);
+                        const isPartial = !exactMatch && (evalData ? evalData.isPartial : false);
+
+                        return (
+                            <span className="inline-flex flex-col items-center mx-1 align-bottom relative group" title={currentStep === 1 ? pinyin : undefined}>
+                                <span className="text-[12px] text-gray-400 font-bold mb-[-4px]">{index}</span>
+                                <div className="relative inline-block text-center px-1 pb-1 font-sans text-base text-gray-700 bg-gray-50 border-b-2 border-gray-300 min-w-[3.5rem]" style={widthStyle}>
+                                    <span className="relative z-10 break-all">{userText || '\u00A0\u00A0\u00A0'}</span>
+                                    <AnalogMark isCorrect={isCorrect} isPartial={isPartial} />
+                                </div>
+                            </span>
+                        );
+                    }
+
+                    return (
+                        <span 
+                            className="inline-flex flex-col items-center mx-1 align-bottom relative group" 
+                            title={currentStep === 1 ? pinyin : undefined}
+                        >
+                            <span className="text-[12px] text-gray-400 font-bold mb-[-4px]">{index}</span>
+                            <input
+                                type="text"
+                                value={inputs[currentStep] && inputs[currentStep][index] ? inputs[currentStep][index] : ''}
+                                onChange={(e) => handleInputChange(currentStep, index, e.target.value)}
+                                placeholder={currentStep === 1 ? answer : ""}
+                                className={`border-b-2 px-1 pb-1 text-center outline-none transition-all font-sans text-base max-w-full 
+                                ${currentStep === 1 
+                                    ? "border-dashed border-gray-400 text-blue-700 bg-gray-50 focus:bg-white placeholder-gray-400/50 focus:placeholder-transparent" 
+                                    : "border-blue-400 text-blue-700 bg-blue-50/30 focus:border-blue-600 focus:bg-transparent"}`}
+                                style={widthStyle}
+                            />
+                        </span>
+                    );
+                }
+                
+                const mainStep = Object.keys(stepMap).find(k => Number(k) > 1);
+                const passed = mainStep && currentStep > Number(mainStep);
+                if (passed) {
+                    return <span className="mx-1 text-indigo-600 font-bold bg-indigo-50 px-1 rounded" title={currentStep === 1 ? pinyin : undefined}>{answer}</span>;
+                }
+                return <span className="mx-1" title={currentStep === 1 ? pinyin : undefined}>{answer}</span>;
+            };
+
+            const T = ({ children, pinyin, currentStep }) => {
+                if (currentStep === 1) {
+                    return (
+                        <span title={pinyin} className="cursor-help border-b border-dotted border-gray-300 mx-0.5 hover:bg-gray-100 transition-colors">
+                            {children}
+                        </span>
+                    );
+                }
+                return <span>{children}</span>;
+            };
+
+            if (step === 5) {
+                return (
+                    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300 flex flex-col items-center justify-center py-10">
+                        <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mb-4">
+                            <Icon name="CheckCircle" size={32} />
+                        </div>
+                        <h3 className="text-2xl font-bold text-gray-800">학습 완료!</h3>
+                        <p className="text-gray-500 mb-6">모든 단계의 빈칸 학습과 채점을 완료했습니다.</p>
+                        
+                        <div className="bg-gray-50 rounded-xl p-6 w-full max-w-md border border-gray-200">
+                            <h4 className="font-bold text-gray-700 mb-4">단계별 결과 요약 (100점 만점)</h4>
+                            <div className="space-y-3">
+                                {[1,2,3,4].map(s => {
+                                    if(correctAnswers && correctAnswers[s] && Object.keys(correctAnswers[s]).length > 0) {
+                                        return (
+                                            <div key={s} className="flex justify-between items-center bg-white p-3 rounded-lg border shadow-sm">
+                                                <span className="text-sm font-medium text-gray-600">Step {s}</span>
+                                                <span className="text-indigo-600 font-bold">{scores[s]} 점</span>
+                                            </div>
+                                        );
+                                    }
+                                    return null;
+                                })}
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 mt-4">
+                            <button onClick={() => {
+                                setStep(1); setInputs({1:{},2:{},3:{},4:{}}); setEvaluatedSteps({1:false,2:false,3:false,4:false}); setScores({1:0,2:0,3:0,4:0}); setEvaluationResults({1:null,2:null,3:null,4:null});
+                            }} className="px-6 py-2.5 rounded-xl border border-gray-300 text-gray-700 font-medium hover:bg-gray-50 transition-colors">
+                                처음부터 다시하기
+                            </button>
+                            <button onClick={handleSubmit} className="px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition-colors shadow-md">
+                                과제 최종 제출하기
+                            </button>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300 h-full flex flex-col">
+                    <div className="flex items-center justify-between shrink-0">
+                        <h3 className="text-xl font-bold">{currentTitle}</h3>
+                        <div className="flex gap-2">
+                            {[1, 2, 3, 4].map(s => (
+                                <div key={s} className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${step === s ? 'bg-indigo-600 text-white shadow-md scale-110 transition-transform' : step > s ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
+                                    {step > s ? <Icon name="CheckCircle" size={16}/> : s}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm flex flex-col flex-1 h-[80vh] min-h-[700px]">
+                        
+                        <div className="p-6 md:p-8 flex-1 overflow-y-auto relative z-10 bg-white">
+                            <h5 className="font-bold text-center mb-6 text-xl text-gray-800">{currentTitle}</h5>
+                            
+                            <div className="text-base md:text-lg leading-loose text-gray-800 space-y-4 font-serif relative z-10">
+                                {isDynamic && dynamicData && dynamicData.tokens ? (
+                                    <p>
+                                        {dynamicData.tokens.map((tok, i) => {
+                                            if (tok.type === 'text') {
+                                                return <span key={i} dangerouslySetInnerHTML={{ __html: tok.value.replace(/\n/g, '<br/>') }} />;
+                                            } else {
+                                                return <React.Fragment key={i}>{renderBlank(tok.stepMap, step, tok.value, tok.pinyin)}</React.Fragment>;
+                                            }
+                                        })}
+                                    </p>
+                                ) : (
+                                    <>
+                                        <p>
+                                            <T pinyin="Zài yí gè péngyǒu de " currentStep={step}>在一个朋友的</T>
+                                            {renderBlank({1: 1, 2: 1}, step, '博客', 'bókè')}
+                                            <T pinyin=" zhōng yǒu zhèyàng yī piān wénzhāng, tā bǎ shèhuì shàng bù chénggōng de rén fēnchéng yǐxià sì zhǒng lèixíng:" currentStep={step}>中有这样一篇文章，她把社会上不成功的人分成以下四种类型：</T>
+                                        </p>
+                                        <p>
+                                            <T pinyin="Dì yī zhǒng shì zhīshì " currentStep={step}>第一种是知识</T>
+                                            {renderBlank({1: 2, 2: 2}, step, '陈旧', 'chénjiù')}
+                                            <T pinyin=" de rén。" currentStep={step}>的人。</T>
+                                            {renderBlank({1: 3, 4: 1}, step, '当今社会知识更新的速度加快', 'dāngjīn shèhuì zhīshì gēngxīn de sùdù jiākuài')}
+                                            <T pinyin="，zhīshì " currentStep={step}>，知识</T>
+                                            {renderBlank({1: 4, 2: 3}, step, '倍增', 'bèizēng')}
+                                            <T pinyin=" de zhōuqī yuè lái yuè duǎn，rénlèi zhēnzhèng jìnrùle " currentStep={step}>的周期越来越短，人类真正进入了</T>
+                                            {renderBlank({1: 5, 3: 1}, step, '知识爆炸', 'zhīshì bàozhà')}
+                                            <T pinyin=" de shídài。Shēnghuó zài zhège shídài，rènhé rén dōu bìxū búduàn xuéxí，gēngxīn zhīshì，xiǎng kào xuéxiào xuédào de zhīshì " currentStep={step}>的时代。生活在这个时代，任何人都必须不断学习，更新知识，想靠学校学到的知识</T>
+                                            {renderBlank({1: 6, 3: 2}, step, '应付一辈子', 'yìngfù yíbèizi')}
+                                            <T pinyin="，" currentStep={step}>，</T>
+                                            {renderBlank({1: 7, 4: 2}, step, '已完全不可能了', 'yǐ wánquán bù kěnéng le')}
+                                            <T pinyin="，" currentStep={step}>，</T>
+                                            {renderBlank({1: 8, 3: 3}, step, '终身教育', 'zhōngshēn jiàoyù')}
+                                            <T pinyin=" yīng guànchuān rén de yìshēng。" currentStep={step}>应贯穿人的一生。</T>
+                                        </p>
+                                        <p>
+                                            <T pinyin="Dì èr zhǒng shì jìnéng " currentStep={step}>第二种是技能</T>
+                                            {renderBlank({1: 9, 2: 4}, step, '单一', 'dānyī')}
+                                            <T pinyin=" de rén。Shèhuì jìngzhēng yuè lái yuè " currentStep={step}>的人。社会竞争越来越</T>
+                                            {renderBlank({1: 10, 2: 5}, step, '激烈', 'jīliè')}
+                                            <T pinyin="，pínfán de jiùyè hé xiàgǎng jiāng chéngwéi " currentStep={step}>，频繁的就业和下岗将成为</T>
+                                            {renderBlank({1: 11, 3: 4}, step, '司空见惯', 'sīkōng jiànguàn')}
+                                            <T pinyin=" de shì。Zhǐ huì zuò yī zhǒng gōngzuò，huàn yí gè gǎngwèi jiù " currentStep={step}>的事。只会做一种工作，换一个岗位就</T>
+                                            {renderBlank({1: 12, 2: 6}, step, '害怕', 'hàipà')}
+                                            <T pinyin=" de rén，" currentStep={step}>的人，</T>
+                                            {renderBlank({1: 13, 4: 3}, step, '日子会不好过', 'rìzi huì bù hǎoguò')}
+                                            <T pinyin="。Yào xiǎng bìmiǎn zài zhíchǎng zhōng chéngwéi “" currentStep={step}>。要想避免在职场中成为“</T>
+                                            {renderBlank({1: 14, 3: 5}, step, '积压物资', 'jīyā wùzī')}
+                                            <T pinyin="”，" currentStep={step}>”，</T>
+                                            {renderBlank({1: 15, 4: 4}, step, '唯一的办法就是多学几手', 'wéiyī de bànfǎ jiùshì duō xué jǐ shǒu')}
+                                            <T pinyin="，" currentStep={step}>，</T>
+                                            {renderBlank({1: 16, 3: 6}, step, '一专多能', 'yìzhuānduōnéng')}
+                                            <T pinyin="，zhǐyǒu zhèyàng，cái bù zhìyú “" currentStep={step}>，只有这样，才不至于“</T>
+                                            {renderBlank({1: 17, 3: 7}, step, '一棵树上吊死', 'yì kē shù shàng diàosǐ')}
+                                            <T pinyin="”。" currentStep={step}>”。</T>
+                                        </p>
+                                        <p>
+                                            <T pinyin="Dì sān zhǒng shì xīnlǐ " currentStep={step}>第三种是心理</T>
+                                            {renderBlank({1: 18, 2: 7}, step, '脆弱', 'cuìruò')}
+                                            <T pinyin=" de rén。Yù dào yīdiǎnr kùnnán jiù " currentStep={step}>的人。遇到一点儿困难就</T>
+                                            {renderBlank({1: 19, 3: 8}, step, '打退堂鼓', 'dǎ tuìtánggǔ')}
+                                            <T pinyin="，" currentStep={step}>，</T>
+                                            {renderBlank({1: 20, 4: 5}, step, '稍有不顺利情绪就降为零', 'shāo yǒu bù shùnlì qíngxù jiù jiàng wéi líng')}
+                                            <T pinyin="，" currentStep={step}>，</T>
+                                            {renderBlank({1: 21, 4: 6}, step, '这样的人在今后的竞争中必然不易成功', 'zhèyàng de rén zài jīn hòu de jìngzhēng zhōng bìrán bù yì chénggōng')}
+                                            <T pinyin="。Yóuyú shēnghuó " currentStep={step}>。由于生活</T>
+                                            {renderBlank({1: 22, 2: 8}, step, '节奏', 'jiézòu')}
+                                            <T pinyin=" jiākuài，" currentStep={step}>加快，</T>
+                                            {renderBlank({1: 23, 4: 7}, step, '竞争压力加大', 'jìngzhēng yālì jiādà')}
+                                            <T pinyin="，yǒu xīnlǐ " currentStep={step}>，有心理</T>
+                                            {renderBlank({1: 24, 2: 9}, step, '障碍', 'zhàng\'ài')}
+                                            <T pinyin=" huò xīnlǐ jíbìng de rén zhújiàn zēngduō，shénjīng jǐnzhāng、xīnlǐ cuìruò chéngle dūshì xiàndàibìng。" currentStep={step}>或心理疾病的人逐渐增多，神经紧张、心理脆弱成了都市现代病。</T>
+                                        </p>
+                                        <p>
+                                            {renderBlank({1: 25, 4: 8}, step, '第四种是目光短浅的人', 'dì sì zhǒng shì mùguāng duǎnqiǎn de rén')}
+                                            <T pinyin="。" currentStep={step}>。</T>
+                                            {renderBlank({1: 26, 3: 9}, step, '鼠目寸光', 'shǔmùcùnguāng')}
+                                            <T pinyin=" nán chéng dàshì，mùguāng yuǎndà cái yì chénggōng。Yǒu jù huà shuō de hǎo：“" currentStep={step}>难成大事，目光远大才易成功。有句话说得好：“</T>
+                                            {renderBlank({1: 27, 4: 9}, step, '你能看多远，你便能走多远', 'nǐ néng kàn duō yuǎn, nǐ biàn néng zǒu duō yuǎn')}
+                                            <T pinyin="。” Yí gè zǔzhī de chéngzhǎng xūyào " currentStep={step}>。”一个组织的成长需要</T>
+                                            {renderBlank({1: 28, 2: 10}, step, '规划', 'guīhuà')}
+                                            <T pinyin="，yí gè rén de chéngzhǎng xūyào shèjì，zhǐ kànjiàn bíjiān xiàbiān yī xiǎo kuài dìfāng de rén，xiànzài " currentStep={step}>，一个人的成长需要设计，只看见鼻尖下边一小块地方的人，现在</T>
+                                            {renderBlank({1: 29, 3: 10}, step, '不吃香', 'bù chīxiāng')}
+                                            <T pinyin="，" currentStep={step}>，</T>
+                                            {renderBlank({1: 30, 4: 10}, step, '以后更不受欢迎', 'yǐhòu gèng bù shòu huānyíng')}
+                                            <T pinyin="。" currentStep={step}>。</T>
+                                        </p>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="w-full h-[50%] md:h-[45%] bg-[#f8fafc] flex flex-col shrink-0 border-t-2 border-gray-200 relative z-20 shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
+                            <div className="p-6 md:p-8 flex-1 overflow-y-auto">
+                                {step === 1 && (
+                                    <div className="animate-in fade-in max-w-4xl mx-auto">
+                                        <h4 className="font-bold text-indigo-700 flex items-center gap-2 mb-2"><span className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded text-xs">Step 1</span> 워밍업 연습란</h4>
+                                        <p className="text-gray-600 text-sm leading-relaxed mb-4">본문에 옅게 표시된 정답을 덮어쓰며 앞으로 나올 빈칸을 미리 연습해 보세요. <br/><strong className="text-indigo-600 mt-1 inline-block">💡 툴팁 기능:</strong> 본문에 마우스를 올리면 한어병음이 나타납니다!</p>
+                                        
+                                        <div className="bg-white rounded-xl border border-gray-200 shadow-md overflow-hidden mt-6 flex flex-col">
+                                            <div className="bg-indigo-50/50 px-5 py-3 font-bold text-[13px] text-indigo-800 border-b border-indigo-100 shrink-0 flex justify-between items-center">
+                                                <span>연습 어휘/구문 리스트</span>
+                                                <span className="text-indigo-600 font-bold bg-white border border-indigo-100 px-3 py-1 rounded-full shadow-sm">총 {dictionaryList.length}개</span>
+                                            </div>
+                                            <div className="overflow-y-auto max-h-64 relative">
+                                                <table className="w-full text-left border-collapse">
+                                                    <thead className="bg-gray-50 sticky top-0 z-20 shadow-sm border-b border-gray-200">
+                                                        <tr className="text-[12px] text-gray-500 uppercase tracking-wider">
+                                                            <th className="py-3 px-4 font-extrabold w-12 text-center border-r border-gray-200">No.</th>
+                                                            <th className="py-3 px-4 font-extrabold w-[30%] border-r border-gray-200">어휘/구문</th>
+                                                            <th className="py-3 px-4 font-extrabold w-[25%] border-r border-gray-200">병음</th>
+                                                            <th className="py-3 px-4 font-extrabold">의미</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-gray-100 bg-white">
+                                                        {dictionaryList.map((item, i) => (
+                                                            <tr key={i} className="hover:bg-indigo-50/80 transition-all duration-200 text-sm group cursor-default">
+                                                                <td className="py-3 px-4 text-center text-gray-400 font-bold group-hover:text-indigo-600 transition-colors border-r border-gray-100">{i+1}</td>
+                                                                <td className="py-3 px-4 font-bold text-gray-800 font-serif break-keep leading-snug border-r border-gray-100">{item.word}</td>
+                                                                <td className="py-3 px-4 text-indigo-500 text-[13px] tracking-wide font-medium border-r border-gray-100">{item.pinyin}</td>
+                                                                <td className="py-3 px-4 text-gray-600 text-[13px] break-keep leading-snug">{item.mean}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                {step === 2 && (
+                                    <div className="animate-in fade-in max-w-4xl mx-auto">
+                                        <h4 className="font-bold text-indigo-700 flex items-center gap-2 mb-2"><span className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded text-xs">Step 2</span> 핵심 키워드 중심</h4>
+                                        <p className="text-gray-600 text-sm leading-relaxed mb-4">문장의 핵심을 파악하는 주요 단어를 본문 빈칸에 채워보세요.</p>
+                                    </div>
+                                )}
+                                {step === 3 && (
+                                    <div className="animate-in fade-in max-w-4xl mx-auto">
+                                        <h4 className="font-bold text-indigo-700 flex items-center gap-2 mb-2"><span className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded text-xs">Step 3</span> 주요 구문 및 사자성어</h4>
+                                        <p className="text-gray-600 text-sm leading-relaxed mb-4">중국어의 맛을 살리는 주요 구문과 사자성어를 빈칸에 채워보세요.</p>
+                                    </div>
+                                )}
+                                {step === 4 && (
+                                    <div className="animate-in fade-in max-w-4xl mx-auto">
+                                        <h4 className="font-bold text-indigo-700 flex items-center gap-2 mb-2"><span className="bg-indigo-100 text-indigo-800 px-2 py-1 rounded text-xs">Step 4</span> 고난도 문장 자율 복원</h4>
+                                        <p className="text-gray-600 text-sm leading-relaxed mb-4">문맥을 이해하고 주요 문장(절 단위)을 스스로 복원해 빈칸에 채워보세요.</p>
+                                    </div>
+                                )}
+
+                                {evaluatedSteps[step] && evaluationResults[step] && (
+                                    <div className="max-w-4xl mx-auto bg-indigo-50/50 p-5 rounded-xl border border-indigo-200 text-sm text-gray-800 mt-4 animate-in slide-in-from-bottom-2 shadow-inner">
+                                        <div className="leading-relaxed" dangerouslySetInnerHTML={{ __html: formatFeedback(evaluationResults[step].teacherMessage) }} />
+                                        
+                                        {evaluationResults[step].evaluations && evaluationResults[step].evaluations.some(e => !e.isCorrect || e.isPartial) && (
+                                            <div className="mt-4 pt-4 border-t border-indigo-200/60 space-y-3">
+                                                <h5 className="font-bold text-indigo-800 text-xs">📝 오답 및 첨삭 노트</h5>
+                                                {evaluationResults[step].evaluations.filter(e => !e.isCorrect || e.isPartial).map(e => (
+                                                    <div key={e.id} className="bg-white p-3 rounded-lg border border-indigo-100 text-xs leading-relaxed shadow-sm">
+                                                        <span className={`font-bold mr-2 ${e.isPartial ? 'text-yellow-600' : 'text-red-500'}`}>Q{e.id}.</span> 
+                                                        {e.feedback}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-4 md:p-5 bg-white border-t border-gray-200 shrink-0 flex justify-center shadow-[0_-4px_10px_rgba(0,0,0,0.03)] z-30">
+                                {!evaluatedSteps[step] ? (
+                                    <div className="w-full max-w-xl space-y-2">
+                                        <p className="text-xs text-center text-gray-400">빈칸을 비워두면 오답 처리됩니다.</p>
+                                        <button onClick={handleEvaluate} disabled={isEvaluating} className="w-full bg-indigo-600 text-white py-3.5 rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-md flex items-center justify-center gap-2 disabled:opacity-50">
+                                            {isEvaluating ? (
+                                                <><span className="animate-spin w-5 h-5 border-2 border-white border-t-transparent rounded-full"></span> AI 튜터 채점 중...</>
+                                            ) : (
+                                                <><Icon name="CheckCircle" size={20}/> 정답 제출 및 채점 받기</>
+                                            )}
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button onClick={() => setStep(step + 1)} className="w-full max-w-xl bg-gray-800 text-white py-3.5 rounded-xl font-bold hover:bg-gray-900 transition-colors shadow-md flex items-center justify-center gap-2 animate-pulse">
+                                        {step < 4 ? `Step ${step + 1} 단계로 이동` : '최종 결과 보기'}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            );
+        };
+
+        const ArchiveDashboard = ({ userInfo, submissions }) => {
+            const timeline = Array.from({ length: 140 }, () => Math.floor(Math.random() * 4));
+            
+            const mySubmissions = submissions ? submissions.filter(s => s.studentId === (userInfo ? userInfo.id : null)) : [];
+            const myApproved = mySubmissions.filter(s => s.status === 'approved');
+            const myPending = mySubmissions.filter(s => s.status === 'pending');
+
+            const totalCount = 142 + myApproved.length;
+
+            return (
+                <div className="space-y-6 animate-in fade-in duration-300">
+                    <div className="bg-white p-6 rounded-2xl border shadow-sm">
+                        <div className="flex justify-between items-start mb-6">
+                            <div>
+                                <h3 className="text-2xl font-bold text-gray-800 mb-1">오늘도 정진하고 계시네요! 🔥</h3>
+                                <p className="text-gray-500 text-sm">당신의 성장이 기록되고 있습니다.</p>
+                            </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-2 gap-4 max-w-sm mb-8">
+                            <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100 flex flex-col items-center justify-center">
+                                <div className="text-sm text-gray-500 font-medium mb-1">누적 과제 수</div>
+                                <div className="text-3xl font-bold text-blue-600">{totalCount}<span className="text-sm font-normal text-gray-400 ml-1">개</span></div>
+                            </div>
+                            <div className="bg-orange-50/50 p-4 rounded-xl border border-orange-100 flex flex-col items-center justify-center">
+                                <div className="text-sm text-gray-500 font-medium mb-1">연속 출석</div>
+                                <div className="text-3xl font-bold text-orange-500">12<span className="text-sm font-normal text-gray-400 ml-1">일</span></div>
+                            </div>
+                        </div>
+
+                        <div className="mb-6">
+                            <div className="flex justify-between items-center mb-4">
+                                <h4 className="font-bold text-gray-700 flex items-center gap-2">
+                                    <Icon name="Activity" size={18} className="text-gray-400"/> Archived Timeline
+                                </h4>
+                                <span className="text-xs text-gray-400 font-medium px-2 py-1 bg-gray-100 rounded">최근 6개월</span>
+                            </div>
+                            <div className="bg-gray-50 p-4 rounded-xl border overflow-x-auto hide-scrollbar">
+                                <div className="grid grid-rows-5 gap-1.5 min-w-[600px] w-full" style={{ gridAutoFlow: 'column', gridAutoColumns: '12px' }}>
+                                    {timeline.map((level, i) => (
+                                        <div key={i} className={`w-3 h-3 rounded-sm ${level === 0 ? 'bg-gray-200' : level === 1 ? 'bg-blue-300' : level === 2 ? 'bg-blue-500' : 'bg-blue-700'}`} title={`${level}개의 과제 완료`}></div>
+                                    ))}
+                                </div>
+                                <div className="flex justify-end items-center gap-2 mt-3 text-xs text-gray-500 font-medium">
+                                    <span>적음</span>
+                                    <div className="flex gap-1">
+                                        <div className="w-3 h-3 rounded-sm bg-gray-200"></div>
+                                        <div className="w-3 h-3 rounded-sm bg-blue-300"></div>
+                                        <div className="w-3 h-3 rounded-sm bg-blue-500"></div>
+                                        <div className="w-3 h-3 rounded-sm bg-blue-700"></div>
+                                    </div>
+                                    <span>많음</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-2xl border shadow-sm">
+                        <h4 className="font-bold text-gray-700 flex items-center gap-2 mb-4">
+                            <Icon name="CheckCircle" size={18} className="text-green-500"/> 최근 완료한 과제
+                        </h4>
+                        <div className="space-y-3">
+                            {myApproved.length > 0 ? myApproved.map(sub => (
+                                <div key={sub.id} className="flex justify-between items-center p-4 bg-gray-50 border border-gray-100 rounded-xl hover:bg-gray-100 transition-colors">
+                                    <div>
+                                        <div className="text-xs text-gray-400 font-medium mb-1">구분: 빈칸 훈련</div>
+                                        <div className="font-bold text-gray-800 text-sm">{sub.title}</div>
+                                    </div>
+                                    <div className="flex items-center gap-4">
+                                        <span className="text-blue-600 font-bold bg-blue-50 px-3 py-1 rounded-full text-sm border border-blue-100">{sub.score} 점</span>
+                                        <button className="text-sm font-medium text-gray-500 hover:text-gray-800">기록 보기</button>
+                                    </div>
+                                </div>
+                            )) : (
+                                <div className="text-sm text-gray-500 py-2 px-2">아직 완료되어 결재된 과제가 없습니다.</div>
+                            )}
+                        </div>
+                    </div>
+
+                    {myPending.length > 0 && (
+                        <div className="bg-white p-6 rounded-2xl border shadow-sm">
+                            <h4 className="font-bold text-gray-700 flex items-center gap-2 mb-4">
+                                <Icon name="Activity" size={18} className="text-orange-500"/> 결재 대기 중인 과제
+                            </h4>
+                            <div className="space-y-3">
+                                {myPending.map(sub => (
+                                    <div key={sub.id} className="flex justify-between items-center p-4 bg-orange-50/30 border border-orange-100 rounded-xl">
+                                        <div>
+                                            <div className="text-xs text-orange-500 font-bold mb-1">상태: 선생님 확인 중...</div>
+                                            <div className="font-bold text-gray-800 text-sm">{sub.title}</div>
+                                            <div className="text-xs text-gray-500 mt-1">제출일시: {sub.submittedAt.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</div>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <span className="text-orange-700 font-bold bg-white px-3 py-1 rounded-full text-sm border border-orange-200 shadow-sm">
+                                                AI 채점: {sub.score}점
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )
+        };
+
+        const AdminSummary = ({ submissions, onApprove }) => {
+            const pendingSubmissions = submissions ? submissions.filter(s => s.status === 'pending') : [];
+            const totalSubmissionsCount = pendingSubmissions.length;
+
+            const timeAgo = (date) => {
+                const minutes = Math.floor((new Date() - date) / 60000);
+                if (minutes < 1) return '방금 전';
+                if (minutes < 60) return `${minutes}분 전`;
+                return `${Math.floor(minutes / 60)}시간 전`;
+            };
+
+            return (
+                <div className="space-y-8 animate-in fade-in">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-white p-5 rounded-2xl border shadow-sm">
+                            <div className="text-sm font-medium text-gray-500 mb-2">미확인 제출 과제</div>
+                            <div className="flex items-end gap-2 mb-3">
+                                <span className="text-4xl font-bold text-rose-500">{totalSubmissionsCount}</span>
+                                <span className="text-gray-500 font-medium mb-1">건</span>
+                            </div>
+                            <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded flex items-center gap-1">
+                                <Icon name="MessageSquare" size={14}/> 피드백 및 채점 필요
+                            </div>
+                        </div>
+                        <div className="bg-white p-5 rounded-2xl border shadow-sm">
+                            <div className="text-sm font-medium text-gray-500 mb-2">승인 대기 중인 학생</div>
+                            <div className="flex items-end gap-2 mb-3">
+                                <span className="text-4xl font-bold text-blue-600">2</span>
+                                <span className="text-gray-500 font-medium mb-1">명</span>
+                            </div>
+                            <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                                학생 관리 메뉴 이동
+                            </div>
+                        </div>
+                        <div className="bg-white p-5 rounded-2xl border shadow-sm">
+                            <div className="text-sm font-medium text-gray-500 mb-2">오늘 접속한 학생</div>
+                            <div className="flex items-end gap-2 mb-3">
+                                <span className="text-4xl font-bold text-gray-800">42</span>
+                                <span className="text-gray-400 font-medium mb-1">/ 50명</span>
+                            </div>
+                            <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+                                출석률 84%
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
+                        <div className="p-5 border-b flex justify-between items-center bg-gray-50/50">
+                            <h4 className="font-bold text-gray-800">최근 과제 제출 (AI 채점 완료 / 선생님 결재 대기)</h4>
+                            <button className="text-sm text-indigo-600 font-medium hover:underline">모두 보기</button>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="bg-white text-gray-400 text-xs uppercase tracking-wider border-b">
+                                        <th className="p-4 font-medium">학생명 (Archive No.)</th>
+                                        <th className="p-4 font-medium">과제명</th>
+                                        <th className="p-4 font-medium">AI 채점 점수</th>
+                                        <th className="p-4 font-medium">제출일시</th>
+                                        <th className="p-4 font-medium text-right">관리</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="text-sm">
+                                    {pendingSubmissions.length > 0 ? pendingSubmissions.map(sub => (
+                                        <tr key={sub.id} className="border-b hover:bg-gray-50 transition-colors">
+                                            <td className="p-4 font-medium text-gray-800">{sub.studentName} <span className="text-gray-400 text-xs font-normal">{sub.studentId}</span></td>
+                                            <td className="p-4 text-gray-600">{sub.title}</td>
+                                            <td className="p-4 font-bold text-indigo-600">{sub.score} 점</td>
+                                            <td className="p-4 text-gray-500">{timeAgo(sub.submittedAt)}</td>
+                                            <td className="p-4 text-right">
+                                                <button onClick={() => onApprove(sub.id)} className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-indigo-700 shadow-sm flex items-center justify-center gap-1 ml-auto transition-colors">
+                                                    <Icon name="CheckCircle" size={14}/> 확인 및 결재
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    )) : (
+                                        <tr>
+                                            <td colSpan="5" className="p-10 text-center text-gray-500">결재 대기 중인 과제가 없습니다.</td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const TaskCreationModal = ({ onClose, onSave, editData }) => {
+            const [level, setLevel] = useState(editData ? editData.level : '6급');
+            const [title, setTitle] = useState(editData ? editData.title : '');
+            const [sourceText, setSourceText] = useState(editData ? editData.sourceText : '');
+            const [isGenerating, setIsGenerating] = useState(false);
+            const [aiResult, setAiResult] = useState(null);
+            const [parsedData, setParsedData] = useState(null);
+            const [errorMsg, setErrorMsg] = useState('');
+
+            const handleGenerate = async () => {
+                setErrorMsg('');
+                if (!sourceText.trim()) {
+                    setErrorMsg('소스 자료(중국어 원문)를 입력해주세요.');
+                    return;
+                }
+                setIsGenerating(true);
+                setAiResult(null);
+                setParsedData(null);
+
+                const apiKey = ""; 
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+                
+                const promptText = `다음 중국어 원문을 분석하여 HSK ${level} 'Scaffold Cloze' 훈련용 데이터를 JSON 형식으로 생성해줘.
+                [요구사항]
+                1. title: 과제 제목 (한국어, 15자 이내)
+                2. summary: 지문 난이도 및 학습 포인트 요약 (한국어, 1~2줄)
+                3. tokens: 원문을 순서대로 배열한 토큰 리스트. (텍스트 토큰과 빈칸 토큰)
+                   - 일반 텍스트는 {"type": "text", "value": "원문텍스트"} (줄바꿈 기호 \n 포함 가능)
+                   - 빈칸(blank)은 {"type": "blank", "value": "정답", "pinyin": "병음", "meaning": "한국어뜻", "step": 스텝번호}
+                4. 빈칸(blank) 할당 규칙 (반드시 총 30개의 빈칸을 생성할 것):
+                   - Step 2 (핵심 단어): 단어 위주로 정확히 10개 선택 (step: 2)
+                   - Step 3 (사자성어/구문): 구문 위주로 정확히 10개 선택 (step: 3)
+                   - Step 4 (문장/절): 의미 단위의 절을 정확히 10개 선택 (step: 4)
+                   * Step 1은 2, 3, 4단계의 모든 빈칸(30개)을 모아 자동으로 워밍업 단계로 구성되므로 별도로 지정할 필요 없음.
+                
+                [원문]
+                ${sourceText}`;
+                
+                const schemaSchema = {
+                    type: "OBJECT",
+                    properties: {
+                        title: { type: "STRING" },
+                        summary: { type: "STRING" },
+                        tokens: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                properties: {
+                                    type: { type: "STRING", description: "'text' or 'blank'" },
+                                    value: { type: "STRING" },
+                                    pinyin: { type: "STRING" },
+                                    meaning: { type: "STRING" },
+                                    step: { type: "INTEGER" }
+                                }
+                            }
+                        }
+                    }
+                };
+
+                const payload = {
+                    contents: [{ parts: [{ text: promptText }] }],
+                    generationConfig: { 
+                        responseMimeType: "application/json",
+                        responseSchema: schemaSchema
+                    }
+                };
+
+                let resultObj = null;
+                try {
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error('API Request Failed');
+                    
+                    const data = await response.json();
+                    const resultText = data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0] ? data.candidates[0].content.parts[0].text : null;
+                    
+                    if (resultText) {
+                        resultObj = JSON.parse(resultText);
+                    }
+                } catch (e) {
+                    console.error("AI Generation Error:", e);
+                    resultObj = {
+                        title: "일사량 조절과 지구 온난화",
+                        summary: "HSK 6급 수준의 환경·과학 지문으로, 태양 복사량 조절을 통한 온난화 해결 방안과 그에 따른 부작용을 분석합니다.",
+                        tokens: [
+                            { type: "text", value: "阳光或者在上层大气中放置" },
+                            { type: "blank", value: "气溶胶", pinyin: "qìróngjiāo", meaning: "에어로졸", step: 2 },
+                            { type: "text", value: "粒子模拟火山爆发效应等。\n有研究表明：与地表温度的变化问题相比，生活在" },
+                            { type: "blank", value: "近海区域", pinyin: "jìnhǎi qūyù", meaning: "근해 구역", step: 2 },
+                            { type: "text", value: "的人们更关心海平面上升的问题；而那些远离海域的人们则认为，影响农业生产或能源消耗的气温上升率问题更值得" },
+                            { type: "blank", value: "关注", pinyin: "guānzhù", meaning: "관심을 갖다", step: 2 },
+                            { type: "text", value: "。\n" },
+                            { type: "blank", value: "有科学家指出：强制性地阻止海平面升高可能导致气温快速下降", pinyin: "yǒu kēxuéjiā zhǐchū...", meaning: "科学界指出强制阻止海平面升高可能导致气温快速下降", step: 4 },
+                            { type: "text", value: "。温度" },
+                            { type: "blank", value: "骤降", pinyin: "zhòujiàng", meaning: "급강하하다", step: 3 },
+                            { type: "text", value: "的危害性可能会超过因碳排放导致全球变暖所带来的危害性，温度下降的速度超过了地球上动植物所能适应的程度，" },
+                            { type: "blank", value: "将是人们需要面对的另一个大问题", pinyin: "jiāng shì rénmen xūyào miànduì de...", meaning: "사람들이 직면해야 할 또 다른 큰 문제가 될 것이다", step: 4 },
+                            { type: "text", value: "。" }
+                        ]
+                    };
+                }
+
+                if (resultObj) {
+                    if (!title) setTitle(resultObj.title);
+                    setAiResult(`[AI 분석 완료] 난이도 및 포인트: ${resultObj.summary}`);
+                    setParsedData(resultObj);
+                }
+                
+                setIsGenerating(false);
+            };
+
+            const handleSaveClick = () => {
+                setErrorMsg('');
+                if (!title.trim() || (!sourceText.trim() && !(editData && editData.isLegacy))) {
+                    setErrorMsg('과제 제목과 소스 자료를 모두 작성해야 합니다.');
+                    return;
+                }
+                
+                const hasValidData = parsedData || (editData && editData.taskData) || (editData && editData.isLegacy);
+                if (!hasValidData) {
+                    setErrorMsg('먼저 AI 콘텐츠 자동 제작 버튼을 눌러 데이터를 생성해 주세요.');
+                    return;
+                }
+
+                let taskData = editData ? editData.taskData : null;
+                
+                if (parsedData && Array.isArray(parsedData.tokens)) {
+                    let dictList = [];
+                    let answers = { 1: {}, 2: {}, 3: {}, 4: {} };
+                    let globalIndex = 1;
+                    let stepCounts = { 1: 1, 2: 1, 3: 1, 4: 1, 5: 1 };
+
+                    const processedTokens = parsedData.tokens.map(tok => {
+                        if (tok.type === 'blank') {
+                            let s = parseInt(tok.step);
+                            if (isNaN(s) || s < 2 || s > 4) s = 2;
+                            
+                            if (!answers[s]) answers[s] = {};
+                            if (!stepCounts[s]) stepCounts[s] = 1;
+
+                            const currentStepIdx = stepCounts[s]++;
+                            const gIdx = globalIndex++;
+
+                            dictList.push({
+                                word: tok.value,
+                                pinyin: tok.pinyin || '',
+                                mean: tok.meaning || ''
+                            });
+
+                            answers[1][gIdx] = tok.value;
+                            answers[s][currentStepIdx] = tok.value;
+
+                            return {
+                                ...tok,
+                                stepMap: { 1: gIdx, [s]: currentStepIdx }
+                            };
+                        }
+                        return tok;
+                    });
+
+                    taskData = {
+                        dictionaryList: dictList,
+                        correctAnswers: answers,
+                        tokens: processedTokens
+                    };
+                }
+
+                onSave({
+                    id: editData ? editData.id : undefined,
+                    level,
+                    category: '읽기 훈련',
+                    title,
+                    type: 'Scaffold Cloze',
+                    status: editData ? editData.status : '활성',
+                    date: editData ? editData.date : new Date().toISOString().split('T')[0],
+                    isLegacy: false,
+                    taskData,
+                    sourceText
+                });
+                
+                onClose();
+            };
+
+            return (
+                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95 duration-200">
+                        <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 rounded-t-2xl">
+                            <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
+                                <div className="p-1.5 bg-indigo-600 text-white rounded-lg"><Icon name={editData ? "Edit3" : "Sparkles"} size={18} /></div>
+                                {editData ? '빈칸 훈련 콘텐츠 편집' : '새 빈칸 훈련 (Scaffold Cloze) 자동 생성'}
+                            </h3>
+                            <button onClick={onClose} className="text-gray-400 hover:text-gray-700 hover:bg-gray-100 p-1.5 rounded-lg transition-colors">
+                                <Icon name="X" size={20} />
+                            </button>
+                        </div>
+                        
+                        <div className="p-6 flex-1 overflow-y-auto space-y-6">
+                            {errorMsg && (
+                                <div className="bg-rose-50 text-rose-600 border border-rose-200 p-4 rounded-xl text-sm font-bold animate-in fade-in flex items-center gap-3">
+                                    <Icon name="ShieldAlert" size={20} />
+                                    {errorMsg}
+                                </div>
+                            )}
+                            <div className="flex flex-col md:flex-row gap-6">
+                                <div className="w-full md:w-1/3 space-y-5">
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">대상 급수</label>
+                                        <select value={level} onChange={e => setLevel(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none text-sm font-medium">
+                                            {['1-2급', '3급', '4급', '5급', '6급', '7-9급'].map(l => <option key={l} value={l}>{l}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-800 font-medium leading-relaxed">
+                                        <strong className="text-blue-700 block mb-1">Scaffold Cloze 생성 원칙</strong>
+                                        입력하신 원문을 바탕으로 AI가 핵심 어휘(Step 2), 구문 및 사자성어(Step 3), 주요 절(Step 4)을 자동으로 추출하여 총 30개의 빈칸을 설계합니다.
+                                    </div>
+                                </div>
+                                <div className="w-full md:w-2/3 space-y-5">
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2 flex justify-between">
+                                            <span>소스 자료 입력 (중국어 원문)</span>
+                                            <span className="text-xs font-normal text-indigo-500">원문을 복사해 붙여넣으세요.</span>
+                                        </label>
+                                        <textarea 
+                                            value={sourceText} 
+                                            onChange={e => {setSourceText(e.target.value); setErrorMsg('');}} 
+                                            placeholder="중국어 원문을 여기에 붙여넣으면 AI가 난이도를 분석하고 4단계 빈칸 훈련용 데이터를 분해 및 생성합니다..."
+                                            className="w-full h-40 p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none text-sm font-serif leading-relaxed"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="bg-indigo-50/50 border border-indigo-100 rounded-xl p-5">
+                                <div className="flex flex-col sm:flex-row gap-4 items-end">
+                                    <div className="flex-1 w-full">
+                                        <label className="block text-xs font-bold text-indigo-800 mb-1">과제 제목</label>
+                                        <input 
+                                            type="text" 
+                                            value={title} 
+                                            onChange={e => {setTitle(e.target.value); setErrorMsg('');}} 
+                                            placeholder="AI가 원문을 분석하여 추천 제목을 지어줍니다 (직접 수정 가능)"
+                                            className="w-full px-4 py-2.5 rounded-lg border border-indigo-200 focus:border-indigo-500 outline-none text-sm font-bold text-gray-800 bg-white"
+                                        />
+                                    </div>
+                                    <button onClick={handleGenerate} disabled={isGenerating} className="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition-colors shadow-md flex items-center justify-center gap-2 shrink-0 disabled:opacity-50">
+                                        {isGenerating ? <span className="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></span> : <Icon name="Sparkles" size={16}/>}
+                                        {editData && parsedData ? 'AI 콘텐츠 재제작' : 'AI 콘텐츠 자동 제작'}
+                                    </button>
+                                </div>
+                                {aiResult && (
+                                    <div className="mt-4 p-3 bg-white rounded-lg border border-indigo-100 text-sm text-gray-700 leading-relaxed shadow-sm">
+                                        <span className="font-bold text-indigo-600">AI 피드백: </span>{aiResult}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 rounded-b-2xl flex justify-end gap-3">
+                            <button onClick={onClose} className="px-5 py-2.5 rounded-xl font-bold text-gray-600 hover:bg-gray-200 transition-colors text-sm">취소</button>
+                            <button onClick={handleSaveClick} className="px-6 py-2.5 rounded-xl bg-gray-800 text-white font-bold hover:bg-gray-900 transition-colors shadow-md text-sm flex items-center gap-2">
+                                <Icon name="CheckCircle" size={18} />
+                                {editData ? '수정 내용 저장하기' : '과제 저장 및 확정하기'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const AdminTaskManager = ({ onPreview, tasks, setTasks, onSaveNewTask }) => {
+            const [level, setLevel] = useState('6급');
+            const [isAddingTask, setIsAddingTask] = useState(false);
+            const [editingTask, setEditingTask] = useState(null);
+
+            const filteredTasks = tasks.filter(t => t.level === level && t.type === 'Scaffold Cloze');
+
+            const handleToggleStatus = (id) => {
+                setTasks(tasks.map(t => {
+                    if (t.id === id) {
+                        return { ...t, status: t.status === '활성' ? '비활성' : '활성' };
+                    }
+                    return t;
+                }));
+            };
+
+            const handleDelete = (id) => {
+                setTasks(tasks.filter(t => t.id !== id));
+            };
+
+            const handleSaveEditedTask = (updatedTaskData) => {
+                setTasks(tasks.map(t => t.id === updatedTaskData.id ? updatedTaskData : t));
+                setEditingTask(null);
+            };
+
+            const levels = ['1-2급', '3급', '4급', '5급', '6급', '7-9급'];
+
+            return (
+                <>
+                <div className="flex flex-col gap-6 animate-in fade-in h-full">
+                    <div className="bg-white p-6 rounded-2xl border shadow-sm flex items-center gap-6">
+                         <h3 className="font-bold text-gray-800 flex items-center gap-2 shrink-0"><Icon name="Archive" size={18}/> HSK 급수 필터</h3>
+                         <div className="flex flex-wrap gap-2">
+                             {levels.map(l => (
+                                 <button key={l} onClick={() => setLevel(l)} 
+                                    className={`px-4 py-2 rounded-lg text-sm font-bold transition-all text-center ${
+                                        level === l 
+                                        ? 'bg-indigo-600 text-white shadow-sm' 
+                                        : 'bg-gray-50 text-gray-500 hover:bg-gray-100 border border-gray-200'
+                                    }`}>
+                                    {l}
+                                 </button>
+                             ))}
+                         </div>
+                    </div>
+
+                    <div className="flex-1 bg-white rounded-2xl border shadow-sm overflow-hidden flex flex-col min-h-[500px]">
+                        <div className="p-5 md:p-6 border-b flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-gray-50/50">
+                            <div>
+                                <h4 className="font-extrabold text-lg text-gray-800"><span className="text-indigo-600">{level} / 빈칸 훈련(Scaffold Cloze)</span> 콘텐츠</h4>
+                                <p className="text-xs text-gray-500 mt-1">학생들에게 배정될 과제 콘텐츠를 편집하고 연동할 수 있습니다.</p>
+                            </div>
+                            <button onClick={() => setIsAddingTask(true)} className="bg-[#4f46e5] text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-indigo-700 shadow-md flex items-center gap-2 transition-all">
+                                <Icon name="Plus" size={18} strokeWidth={3}/> 새 빈칸 훈련 생성
+                            </button>
+                        </div>
+
+                        <div className="flex-1 overflow-x-auto p-0">
+                            <table className="w-full text-left border-collapse min-w-[700px]">
+                                <thead>
+                                    <tr className="bg-gray-50 text-gray-500 text-[11px] uppercase tracking-wider border-b border-gray-200">
+                                        <th className="p-4 font-bold w-12 text-center">ID</th>
+                                        <th className="p-4 font-bold">과제 제목</th>
+                                        <th className="p-4 font-bold w-28 text-center">상태</th>
+                                        <th className="p-4 font-bold w-32">생성일</th>
+                                        <th className="p-4 font-bold w-48 text-center">관리 (편집/미리보기)</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="text-sm">
+                                    {filteredTasks.length > 0 ? filteredTasks.map(t => (
+                                        <tr key={t.id} className="border-b border-gray-100 hover:bg-indigo-50/30 transition-colors group">
+                                            <td className="p-4 text-center text-gray-400 font-bold">{t.id}</td>
+                                            <td className="p-4 font-bold text-gray-800 group-hover:text-indigo-700 transition-colors">{t.title}</td>
+                                            <td className="p-4 text-center">
+                                                <button 
+                                                    onClick={() => handleToggleStatus(t.id)}
+                                                    className={`px-3 py-1 rounded-full text-[11px] font-bold cursor-pointer transition-all shadow-sm hover:scale-105 active:scale-95 ${
+                                                        t.status === '활성' ? 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200' : 'bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200'
+                                                    }`}
+                                                    title="클릭하여 활성/비활성 전환"
+                                                >
+                                                    {t.status}
+                                                </button>
+                                            </td>
+                                            <td className="p-4 text-gray-400 text-xs font-medium">{t.date}</td>
+                                            <td className="p-4">
+                                                <div className="flex items-center justify-center gap-2">
+                                                    <button onClick={() => onPreview(t)} className="p-2 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm group-hover:scale-105" title="실제 화면 미리보기">
+                                                        <Icon name="Eye" size={18}/>
+                                                    </button>
+                                                    <button onClick={() => setEditingTask(t)} className="p-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-indigo-50 hover:text-indigo-600 transition-all shadow-sm hover:scale-105" title="콘텐츠 편집">
+                                                        <Icon name="Edit3" size={18}/>
+                                                    </button>
+                                                    <button onClick={() => handleDelete(t.id)} className="p-2 bg-gray-50 text-gray-600 rounded-lg hover:bg-rose-50 hover:text-rose-600 transition-all shadow-sm hover:scale-105" title="삭제">
+                                                        <Icon name="Trash2" size={18}/>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )) : (
+                                        <tr>
+                                            <td colSpan="5" className="p-16 text-center text-gray-400">
+                                                <div className="flex flex-col items-center gap-3">
+                                                    <Icon name="Archive" size={32} className="opacity-20"/>
+                                                    <p>해당 급수에 등록된 빈칸 훈련 콘텐츠가 없습니다.</p>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                {(isAddingTask || editingTask) && (
+                    <TaskCreationModal 
+                        editData={editingTask}
+                        onClose={() => { setIsAddingTask(false); setEditingTask(null); }} 
+                        onSave={(data) => {
+                            if (editingTask) {
+                                handleSaveEditedTask(data);
+                            } else {
+                                onSaveNewTask(data);
+                            }
+                        }} 
+                    />
+                )}
+                </>
+            );
+        };
+
+        const StudentManager = () => {
+            const [students, setStudents] = useState([
+                { id: 'STU-075', name: '김유신', email: 'yushin@hsktc.com', level: '6급', status: '활성', joinDate: '2026-03-15', avgScore: 88, completedTasks: 12 },
+                { id: 'STU-088', name: '이순신', email: 'sunshin@hsktc.com', level: '6급', status: '활성', joinDate: '2026-03-20', avgScore: 92, completedTasks: 8 },
+                { id: 'STU-092', name: '강감찬', email: 'gamchan@hsktc.com', level: '5급', status: '대기', joinDate: '2026-04-06', avgScore: 0, completedTasks: 0 },
+                { id: 'STU-095', name: '유관순', email: 'gwansun@hsktc.com', level: '6급', status: '대기', joinDate: '2026-04-06', avgScore: 0, completedTasks: 0 }
+            ]);
+
+            const handleApprove = (id) => {
+                setStudents(prev => prev.map(s => s.id === id ? { ...s, status: '활성' } : s));
+            };
+
+            const handleDelete = (id) => {
+                if(confirm('이 학생을 삭제하시겠습니까?')) {
+                    setStudents(prev => prev.filter(s => s.id !== id));
+                }
+            };
+
+            return (
+                <div className="flex flex-col h-full animate-in fade-in">
+                    <div className="bg-white rounded-2xl border shadow-sm overflow-hidden flex flex-col h-full">
+                        <div className="p-6 border-b flex justify-between items-center bg-gray-50/50 shrink-0">
+                            <div>
+                                <h4 className="font-extrabold text-lg text-gray-800 flex items-center gap-2">
+                                    <Icon name="Users" size={20} className="text-indigo-600"/>
+                                    수강생 목록 관리
+                                </h4>
+                                <p className="text-xs text-gray-500 mt-1">총 {students.length}명의 학생이 등록되어 있습니다. (대기: {students.filter(s => s.status === '대기').length}명)</p>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-x-auto p-0">
+                            <table className="w-full text-left border-collapse min-w-[700px]">
+                                <thead>
+                                    <tr className="bg-gray-50 text-gray-500 text-[11px] uppercase tracking-wider border-b border-gray-200">
+                                        <th className="p-4 font-bold text-center">상태</th>
+                                        <th className="p-4 font-bold">학생 이름</th>
+                                        <th className="p-4 font-bold">이메일 (계정)</th>
+                                        <th className="p-4 font-bold text-center">등록 급수</th>
+                                        <th className="p-4 font-bold text-center">완료한 과제</th>
+                                        <th className="p-4 font-bold text-center">평균 점수</th>
+                                        <th className="p-4 font-bold text-center">가입일</th>
+                                        <th className="p-4 font-bold text-right">관리</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="text-sm">
+                                    {students.map(s => (
+                                        <tr key={s.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                            <td className="p-4 text-center">
+                                                {s.status === '대기' ? (
+                                                    <span className="bg-rose-100 text-rose-600 font-bold px-2.5 py-1 rounded text-xs">승인 대기</span>
+                                                ) : (
+                                                    <span className="bg-green-100 text-green-600 font-bold px-2.5 py-1 rounded text-xs">활성</span>
+                                                )}
+                                            </td>
+                                            <td className="p-4 font-bold text-gray-800">{s.name} <span className="text-xs text-gray-400 font-normal ml-1">({s.id})</span></td>
+                                            <td className="p-4 text-gray-600">{s.email}</td>
+                                            <td className="p-4 text-center font-bold text-indigo-600">{s.level}</td>
+                                            <td className="p-4 text-center">{s.completedTasks}건</td>
+                                            <td className="p-4 text-center">{s.avgScore > 0 ? `${s.avgScore}점` : '-'}</td>
+                                            <td className="p-4 text-center text-gray-500 text-xs">{s.joinDate}</td>
+                                            <td className="p-4 text-right">
+                                                <div className="flex justify-end gap-2">
+                                                    {s.status === '대기' && (
+                                                        <button onClick={() => handleApprove(s.id)} className="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-700 transition-colors shadow-sm">
+                                                            계정 승인
+                                                        </button>
+                                                    )}
+                                                    <button onClick={() => handleDelete(s.id)} className="p-1.5 text-gray-400 hover:bg-rose-50 hover:text-rose-600 rounded-lg transition-colors">
+                                                        <Icon name="Trash2" size={18}/>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const AdminDashboard = ({ submissions, onApprove, tasks, setTasks, onSaveNewTask }) => {
+            const [activeTab, setActiveTab] = useState('tasks');
+            const [previewMode, setPreviewMode] = useState(false);
+
+            if (previewMode) {
+                return (
+                    <div className="flex flex-col h-full animate-in fade-in duration-300">
+                        <div className="mb-4 shrink-0">
+                             <button onClick={() => setPreviewMode(false)} className="flex items-center gap-2 text-gray-500 hover:text-indigo-600 font-bold transition-colors">
+                                 <Icon name="ChevronLeft" size={20}/> 과제 콘텐츠 목록으로 돌아가기
+                             </button>
+                        </div>
+                        <div className="flex-1 border-[3px] border-indigo-400 rounded-xl overflow-hidden shadow-[0_10px_40px_rgba(79,70,229,0.15)] relative flex flex-col bg-slate-50">
+                             <div className="bg-indigo-600 text-white text-xs font-bold py-2 px-4 z-50 text-center tracking-widest flex items-center justify-center gap-2 shrink-0">
+                                 <Icon name="Eye" size={16}/> 미리보기 모드 (실제 학생에게 보여지는 화면입니다)
+                             </div>
+                             <div className="flex-1 p-4 md:p-6 overflow-y-auto">
+                                  <ClozeSystem setActiveMenu={() => setPreviewMode(false)} onSubmit={() => { setPreviewMode(false); }} taskConfig={previewMode} />
+                             </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="flex flex-col h-full animate-in fade-in duration-300">
+                    <div className="flex justify-between items-end mb-6 shrink-0">
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-800 mb-1 flex items-center gap-2">
+                                <div className="p-1.5 bg-indigo-600 text-white rounded"><Icon name="ShieldAlert" size={20}/></div>
+                                관리자 대시보드
+                            </h2>
+                            <p className="text-gray-500 text-sm">학생 및 과제 관리를 총괄합니다.</p>
+                        </div>
+                        <div className="px-3 py-1.5 bg-rose-50 text-rose-600 font-bold text-xs rounded-full border border-rose-200">
+                            Teacher Mode
+                        </div>
+                    </div>
+
+                    <div className="flex gap-6 border-b border-gray-200 mb-6 shrink-0">
+                        <button onClick={() => setActiveTab('summary')} className={`pb-3 border-b-2 px-2 flex items-center gap-2 transition-colors ${activeTab === 'summary' ? 'border-indigo-600 font-bold text-indigo-600' : 'border-transparent font-medium text-gray-500 hover:text-gray-800'}`}>
+                            <Icon name="LayoutDashboard" size={18}/> 대시보드 요약
+                        </button>
+                        <button onClick={() => setActiveTab('tasks')} className={`pb-3 border-b-2 px-2 flex items-center gap-2 transition-colors ${activeTab === 'tasks' ? 'border-indigo-600 font-bold text-indigo-600' : 'border-transparent font-medium text-gray-500 hover:text-gray-800'}`}>
+                            <Icon name="FileText" size={18}/> 빈칸 훈련 콘텐츠 관리
+                        </button>
+                        <button onClick={() => setActiveTab('students')} className={`pb-3 border-b-2 px-2 flex items-center gap-2 transition-colors ${activeTab === 'students' ? 'border-indigo-600 font-bold text-indigo-600' : 'border-transparent font-medium text-gray-500 hover:text-gray-800'}`}>
+                            <Icon name="Users" size={18}/> 수강생 관리
+                        </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto pb-10 hide-scrollbar">
+                        {activeTab === 'summary' && <AdminSummary submissions={submissions} onApprove={onApprove} />}
+                        {activeTab === 'tasks' && <AdminTaskManager onPreview={(t) => setPreviewMode(t)} tasks={tasks} setTasks={setTasks} onSaveNewTask={onSaveNewTask} />}
+                        {activeTab === 'students' && <StudentManager />}
+                    </div>
+                </div>
+            )
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
